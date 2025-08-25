@@ -103,7 +103,8 @@ export class AnalysisController {
 
   getQueueStats = async (req: AuthRequest, res: Response) => {
     try {
-      const stats = await this.analysisService.getQueueStats();
+      const userId = req.user.id;
+      const stats = await this.analysisService.getUserQueueStats(userId);
 
       res.json({
         success: true,

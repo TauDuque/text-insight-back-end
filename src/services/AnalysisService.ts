@@ -33,6 +33,9 @@ export class AnalysisService {
       },
     });
 
+    // Limpar cache das estatísticas do usuário para forçar atualização
+    await cacheService.invalidateUserCache(userId);
+
     if (isLongText) {
       // Processamento assíncrono
       const job = await textAnalysisQueue.add(
@@ -93,6 +96,9 @@ export class AnalysisService {
         // Cache do resultado por hash do texto
         await cacheService.set(`text_hash:${textHash}:${userId}`, result, 3600); // 1 hora
         await cacheService.cacheAnalysis(analysis.id, result, 3600);
+
+        // Limpar cache das estatísticas do usuário para forçar atualização
+        await cacheService.invalidateUserCache(userId);
 
         return result;
       } catch (error) {
@@ -270,6 +276,45 @@ export class AnalysisService {
 
     // Cache por 30 segundos
     await cacheService.cacheQueueStats(stats, 30);
+
+    return stats;
+  }
+
+  async getUserQueueStats(userId: string) {
+    const cacheKey = `user:${userId}:queueStats`;
+    const cached = await cacheService.get(cacheKey);
+
+    if (cached) {
+      return { ...cached, fromCache: true };
+    }
+
+    // Buscar análises do usuário na fila
+    const [waiting, active, completed, failed] = await Promise.all([
+      prisma.analysis.count({
+        where: { userId, status: "PENDING" },
+      }),
+      prisma.analysis.count({
+        where: { userId, status: "PROCESSING" },
+      }),
+      prisma.analysis.count({
+        where: { userId, status: "COMPLETED" },
+      }),
+      prisma.analysis.count({
+        where: { userId, status: "FAILED" },
+      }),
+    ]);
+
+    const stats = {
+      waiting,
+      active,
+      completed,
+      failed,
+      total: waiting + active + completed + failed,
+      timestamp: new Date().toISOString(),
+    };
+
+    // Cache por 30 segundos
+    await cacheService.set(cacheKey, stats, 30);
 
     return stats;
   }

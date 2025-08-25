@@ -2,6 +2,7 @@ import { Job } from "bull";
 import { textAnalysisQueue } from "../config/queue";
 import { TextAnalysisService } from "../services/TextAnalysisService";
 import { prisma } from "../config/database";
+import { cacheService } from "../services/CacheService";
 
 interface AnalysisJobData {
   analysisId: string;
@@ -43,6 +44,9 @@ textAnalysisQueue.process("analyze-text", async (job: Job<AnalysisJobData>) => {
       },
     });
 
+    // Limpar cache das estatísticas do usuário para forçar atualização
+    await cacheService.invalidateUserCache(userId);
+
     job.progress(100);
 
     console.log(`✅ Análise ${analysisId} concluída`);
@@ -60,6 +64,9 @@ textAnalysisQueue.process("analyze-text", async (job: Job<AnalysisJobData>) => {
         completedAt: new Date(),
       },
     });
+
+    // Limpar cache das estatísticas do usuário para forçar atualização
+    await cacheService.invalidateUserCache(userId);
 
     throw error;
   }

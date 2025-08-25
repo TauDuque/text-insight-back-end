@@ -186,6 +186,41 @@ export const translations: Translations = {
     es: "Procesando...",
     en: "Processing...",
   },
+  "analysis.details": {
+    pt: "Detalhes da Análise",
+    es: "Detalles del Análisis",
+    en: "Analysis Details",
+  },
+  "analysis.back": {
+    pt: "Voltar à Análise",
+    es: "Volver al Análisis",
+    en: "Back to Analysis",
+  },
+  "analysis.createdAt": {
+    pt: "Criada em",
+    es: "Creada en",
+    en: "Created at",
+  },
+  "analysis.results": {
+    pt: "Resultados da Análise",
+    es: "Resultados del Análisis",
+    en: "Analysis Results",
+  },
+  "analysis.status": {
+    pt: "Status",
+    es: "Estado",
+    en: "Status",
+  },
+  "analysis.error": {
+    pt: "Erro",
+    es: "Error",
+    en: "Error",
+  },
+  "analysis.notFound": {
+    pt: "Análise não encontrada",
+    es: "Análisis no encontrado",
+    en: "Analysis not found",
+  },
 
   // Resultados da análise
   "results.basic.title": {
@@ -333,6 +368,26 @@ export const translations: Translations = {
     es: "Información",
     en: "Information",
   },
+  "messages.copied": {
+    pt: "Resultados copiados!",
+    es: "¡Resultados copiados!",
+    en: "Results copied!",
+  },
+  "messages.downloaded": {
+    pt: "Arquivo baixado!",
+    es: "¡Archivo descargado!",
+    en: "File downloaded!",
+  },
+  "messages.copyError": {
+    pt: "Erro ao copiar",
+    es: "Error al copiar",
+    en: "Error copying",
+  },
+  "messages.downloadError": {
+    pt: "Erro ao baixar arquivo",
+    es: "Error al descargar archivo",
+    en: "Error downloading file",
+  },
 
   // Botões
   "button.retry": {
@@ -350,10 +405,47 @@ export const translations: Translations = {
     es: "Descargar",
     en: "Download",
   },
+  "button.back": {
+    pt: "Voltar",
+    es: "Volver",
+    en: "Back",
+  },
   "button.close": {
     pt: "Fechar",
     es: "Cerrar",
     en: "Close",
+  },
+
+  // Autenticação
+  "auth.login": {
+    pt: "Entrar",
+    es: "Iniciar Sesión",
+    en: "Login",
+  },
+  "auth.register": {
+    pt: "Cadastre-se",
+    es: "Registrarse",
+    en: "Register",
+  },
+  "auth.loggingIn": {
+    pt: "Entrando...",
+    es: "Iniciando sesión...",
+    en: "Logging in...",
+  },
+  "auth.loginSubtitle": {
+    pt: "Faça login na sua conta",
+    es: "Inicia sesión en tu cuenta",
+    en: "Sign in to your account",
+  },
+  "auth.noAccount": {
+    pt: "Não tem conta?",
+    es: "¿No tienes cuenta?",
+    en: "Don't have an account?",
+  },
+  "auth.loginError": {
+    pt: "Erro ao fazer login",
+    es: "Error al iniciar sesión",
+    en: "Error logging in",
   },
 
   // Seleção de idioma
