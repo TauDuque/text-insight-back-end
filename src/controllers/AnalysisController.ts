@@ -18,10 +18,33 @@ export class AnalysisController {
       const statusCode =
         "status" in result && result.status === "COMPLETED" ? 200 : 202;
 
-      res.status(statusCode).json({
-        success: true,
-        data: result,
-      });
+      // Se a análise vai para fila, adicionar instruções de acompanhamento
+      if (
+        "status" in result &&
+        (result.status === "PENDING" || result.status === "PROCESSING") &&
+        "id" in result
+      ) {
+        res.status(202).json({
+          success: true,
+          data: result,
+          instructions: {
+            message:
+              "Análise enviada para processamento. Para acompanhar o status:",
+            checkStatus: `GET /api/analyze/${result.id}`,
+            headers: "X-API-Key: sua_api_key_aqui",
+            examples: {
+              postman: "Use Postman ou Insomnia com o endpoint acima",
+              curl: `curl -H "X-API-Key: sua_api_key_aqui" http://localhost:3001/api/analyze/${result.id}`,
+              note: "Substitua 'sua_api_key_aqui' pela sua API Key real",
+            },
+          },
+        });
+      } else {
+        res.status(statusCode).json({
+          success: true,
+          data: result,
+        });
+      }
     } catch (error: any) {
       console.error("Erro na análise:", error);
       res.status(500).json({
