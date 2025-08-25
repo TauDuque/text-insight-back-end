@@ -448,6 +448,53 @@ export const translations: Translations = {
     en: "Error logging in",
   },
 
+  // Dashboard
+  "dashboard.welcome": {
+    pt: "Bem-vindo",
+    es: "Bienvenido",
+    en: "Welcome",
+  },
+  "dashboard.totalAnalyses": {
+    pt: "Total de Análises",
+    es: "Total de Análisis",
+    en: "Total Analyses",
+  },
+  "dashboard.completed": {
+    pt: "Concluídas",
+    es: "Completadas",
+    en: "Completed",
+  },
+  "dashboard.inProgress": {
+    pt: "Em Andamento",
+    es: "En Progreso",
+    en: "In Progress",
+  },
+  "dashboard.failed": {
+    pt: "Falharam",
+    es: "Fallaron",
+    en: "Failed",
+  },
+  "stats.overview": {
+    pt: "Visão Geral",
+    es: "Vista General",
+    en: "Overview",
+  },
+  "stats.averageProcessingTime": {
+    pt: "Tempo Médio de Processamento",
+    es: "Tiempo Promedio de Procesamiento",
+    en: "Average Processing Time",
+  },
+  "global.total": {
+    pt: "Total",
+    es: "Total",
+    en: "Total",
+  },
+  "global.logout": {
+    pt: "Sair",
+    es: "Salir",
+    en: "Logout",
+  },
+
   // Seleção de idioma
   "language.pt": {
     pt: "Português",
