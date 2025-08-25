@@ -15,6 +15,7 @@ export const requestLogger = (
     ip: req.ip,
     userAgent: req.get("User-Agent"),
     timestamp: new Date().toISOString(),
+    headers: req.headers, // ADICIONAR TODOS OS HEADERS
   });
 
   // Interceptar o final da resposta

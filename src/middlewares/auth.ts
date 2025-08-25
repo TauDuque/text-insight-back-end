@@ -14,6 +14,18 @@ export const authenticateToken = (
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1];
 
+  // Debug: verificar JWT_SECRET
+  console.log(
+    "🔐 Auth Middleware - JWT_SECRET:",
+    process.env.JWT_SECRET ? "DEFINIDO" : "NÃO DEFINIDO"
+  );
+  console.log(
+    "🔐 Auth Middleware - JWT_SECRET valor:",
+    process.env.JWT_SECRET
+      ? process.env.JWT_SECRET.substring(0, 20) + "..."
+      : "undefined"
+  );
+
   if (!token) {
     return res.status(401).json({
       success: false,
