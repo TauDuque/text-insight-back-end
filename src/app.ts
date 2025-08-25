@@ -16,7 +16,7 @@ import "./workers/textAnalysisWorker";
 
 dotenv.config();
 
-const app = express();
+export const app = express();
 
 // Middlewares de segurança e logging
 app.use(helmet());
@@ -86,6 +86,9 @@ async function startServer() {
   }
 }
 
-startServer();
+// Inicia o servidor apenas se não estiver em ambiente de teste
+if (process.env.NODE_ENV !== "test") {
+  startServer();
+}
 
 export default app;
