@@ -1,0 +1,45 @@
+version: "3.8"
+
+services:
+  # Serviço da nossa API Backend
+  backend:
+    build: . # Constrói a imagem a partir do Dockerfile na pasta atual
+    container_name: textinsight_api
+    ports:
+      - "3001:3001" # Mapeia a porta 3001 do host para a 3001 do contêiner
+    environment:
+      # Variáveis de ambiente para a aplicação
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: "redis://redis:6379"
+      JWT_SECRET: ${JWT_SECRET}
+    depends_on:
+      - database # Garante que o banco de dados inicie antes da API
+      - redis # Garante que o Redis inicie antes da API
+    volumes:
+      # Monta o código-fonte local no contêiner para desenvolvimento com hot-reload (opcional)
+      # Se você usar nodemon, isso é útil. Para produção, remova esta linha.
+      - ./src:/usr/src/app/src
+
+  # Serviço do Banco de Dados PostgreSQL
+  database:
+    image: postgres:15-alpine # Usa uma imagem oficial do PostgreSQL
+    container_name: textinsight_db
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: textinsightdb
+    ports:
+      - "5432:5432" # Expõe a porta do PostgreSQL para o host (para debug com DBeaver, etc.)
+    volumes:
+      - postgres_data:/var/lib/postgresql/data # Persiste os dados do banco
+
+  # Serviço do Redis
+  redis:
+    image: redis:7-alpine # Usa uma imagem oficial do Redis
+    container_name: textinsight_redis
+    ports:
+      - "6379:6379" # Expõe a porta do Redis para o host
+
+volumes:
+  # Define o volume para persistência de dados do PostgreSQL
+  postgres_data:
