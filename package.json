@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon --exec ts-node src/app.ts",
-    "build": "rimraf dist && prisma generate && tsc && copyfiles -u 1 prisma/schema.prisma dist/prisma",
+    "build": "rm -rf dist && prisma generate && tsc && mkdir -p dist/prisma && cp prisma/schema.prisma dist/prisma/",
     "start": "node dist/app.js",
     "test": "cross-env NODE_ENV=test jest",
     "lint": "eslint src/**/*.ts",
@@ -55,7 +55,6 @@
     "@types/supertest": "^6.0.3",
     "@typescript-eslint/eslint-plugin": "^8.40.0",
     "@typescript-eslint/parser": "^8.40.0",
-    "copyfiles": "^2.4.1",
     "cross-env": "^10.0.0",
     "eslint": "^9.34.0",
     "jest": "^30.0.5",
