@@ -49,4 +49,4 @@ EXPOSE 3001
 
 # O comando que será executado quando o container iniciar.
 # Ele roda a aplicação a partir do código JavaScript compilado.
-CMD ["node", "dist/index.js"]
+CMD ["node", "dist/app.js"]
