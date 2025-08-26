@@ -6,7 +6,11 @@
 app = 'text-insight-api'
 primary_region = 'cdg'
 
-[build]
+[build]   
+[
+build.args
+]
+ NODE_ENV = "development" 
 
 [deploy]
   release_command = 'npx prisma migrate deploy'
