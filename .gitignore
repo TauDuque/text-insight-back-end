@@ -65,8 +65,6 @@ jspm_packages/
 ehthumbs.db
 Thumbs.db
 
-# Prisma
-prisma/migrations/
 
 # Redis dump
 dump.rdb
