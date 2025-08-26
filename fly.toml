@@ -7,9 +7,7 @@ app = 'text-insight-api'
 primary_region = 'cdg'
 
 [build]   
-[
-build.args
-]
+[build.args]
  NODE_ENV = "development" 
 
 [deploy]
