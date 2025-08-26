@@ -68,7 +68,7 @@ app.use("*", (req, res) => {
   });
 });
 
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 3001;
 
 async function startServer() {
   try {
