@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { AnalysisService } from "../services/AnalysisService";
+import { Logger } from "../utils/logger";
 
 interface AuthRequest extends Request {
   user?: any;
@@ -10,10 +11,24 @@ export class AnalysisController {
 
   analyze = async (req: AuthRequest, res: Response) => {
     try {
+      Logger.info("🔍 [AnalysisController] Iniciando análise...");
+      Logger.info("👤 [AnalysisController] User:", req.user);
+
       const { text } = req.body;
-      const userId = req.user.id;
+      const userId = req.user.userId; // Corrigido: userId em vez de id
+
+      Logger.info(
+        "📝 [AnalysisController] Texto recebido:",
+        text?.substring(0, 100) + "..."
+      );
+      Logger.info("🆔 [AnalysisController] UserId:", userId);
 
       const result = await this.analysisService.createAnalysis(text, userId);
+
+      Logger.success(
+        "✅ [AnalysisController] Análise criada com sucesso:",
+        result
+      );
 
       const statusCode =
         "status" in result && result.status === "COMPLETED" ? 200 : 202;
@@ -46,7 +61,8 @@ export class AnalysisController {
         });
       }
     } catch (error: any) {
-      console.error("Erro na análise:", error);
+      Logger.error("❌ [AnalysisController] Erro na análise:", error);
+      Logger.error("❌ [AnalysisController] Stack trace:", error.stack);
       res.status(500).json({
         success: false,
         message: error.message || "Erro interno do servidor",
@@ -57,7 +73,7 @@ export class AnalysisController {
   getAnalysis = async (req: AuthRequest, res: Response) => {
     try {
       const { analysisId } = req.params;
-      const userId = req.user.id;
+      const userId = req.user.userId;
 
       const analysis = await this.analysisService.getAnalysis(
         analysisId,
@@ -79,7 +95,7 @@ export class AnalysisController {
 
   getUserAnalyses = async (req: AuthRequest, res: Response) => {
     try {
-      const userId = req.user.id;
+      const userId = req.user.userId;
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 10;
 
@@ -104,7 +120,7 @@ export class AnalysisController {
   deleteAnalysis = async (req: AuthRequest, res: Response) => {
     try {
       const { analysisId } = req.params;
-      const userId = req.user.id;
+      const userId = req.user.userId;
 
       const result = await this.analysisService.deleteAnalysis(
         analysisId,
@@ -126,7 +142,7 @@ export class AnalysisController {
 
   getQueueStats = async (req: AuthRequest, res: Response) => {
     try {
-      const userId = req.user.id;
+      const userId = req.user.userId;
       const stats = await this.analysisService.getUserQueueStats(userId);
 
       res.json({
@@ -143,7 +159,7 @@ export class AnalysisController {
 
   getUserStats = async (req: AuthRequest, res: Response) => {
     try {
-      const userId = req.user.id;
+      const userId = req.user.userId;
       const stats = await this.analysisService.getAnalysisStats(userId);
 
       res.json({
@@ -162,7 +178,7 @@ export class AnalysisController {
   retryAnalysis = async (req: AuthRequest, res: Response) => {
     try {
       const { analysisId } = req.params;
-      const userId = req.user.id;
+      const userId = req.user.userId;
 
       // Buscar análise original
       const originalAnalysis = await this.analysisService.getAnalysis(
