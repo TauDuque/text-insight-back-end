@@ -15,6 +15,9 @@ import analysisRoutes from "./routes/analysis";
 import "./workers/textAnalysisWorker";
 
 dotenv.config();
+if (process.env.NODE_ENV !== "production") {
+  dotenv.config();
+}
 
 export const app = express();
 
