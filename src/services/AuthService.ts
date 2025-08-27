@@ -29,7 +29,14 @@ export class AuthService {
     // Criar API Key padrão
     const apiKey = await this.createApiKey(user.id, "Default Key");
 
-    return { user, apiKey: apiKey.key };
+    // Gerar JWT Token para login automático
+    const token = jwt.sign(
+      { userId: user.id, email: user.email },
+      process.env.JWT_SECRET || "secret",
+      { expiresIn: "24h" }
+    );
+
+    return { user, apiKey: apiKey.key, token };
   }
 
   async login(email: string, password: string) {
@@ -95,26 +102,26 @@ export class AuthService {
         key: true,
         name: true,
         isActive: true,
-        createdAt: true
-      }
+        createdAt: true,
+      },
     });
   }
 
   async revokeApiKey(keyId: string, userId: string) {
     const apiKey = await prisma.apiKey.findFirst({
-      where: { 
+      where: {
         id: keyId,
-        userId 
-      }
+        userId,
+      },
     });
 
     if (!apiKey) {
-      throw new Error('API Key não encontrada');
+      throw new Error("API Key não encontrada");
     }
 
     return await prisma.apiKey.update({
       where: { id: keyId },
-      data: { isActive: false }
+      data: { isActive: false },
     });
   }
 
@@ -128,8 +135,8 @@ export class AuthService {
         email: true,
         name: true,
         createdAt: true,
-        updatedAt: true
-      }
+        updatedAt: true,
+      },
     });
 
     return updatedUser;
@@ -144,8 +151,8 @@ export class AuthService {
         email: true,
         name: true,
         createdAt: true,
-        updatedAt: true
-      }
+        updatedAt: true,
+      },
     });
   }
 }

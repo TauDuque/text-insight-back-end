@@ -36,7 +36,7 @@ router.get(
   analysisController.getUserAnalyses
 );
 
-// Rotas protegidas por API Key
+// Rotas protegidas por API Key (para status da fila)
 router.get(
   "/:analysisId",
   authenticateApiKey,
@@ -49,9 +49,11 @@ router.post(
   validateAnalysisId,
   analysisController.retryAnalysis
 );
+
+// Rotas protegidas por JWT (para ações pessoais)
 router.delete(
   "/:analysisId",
-  authenticateApiKey,
+  authenticateToken,
   validateAnalysisId,
   analysisController.deleteAnalysis
 );

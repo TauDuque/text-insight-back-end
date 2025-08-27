@@ -25,6 +25,7 @@ export class AuthController {
             createdAt: result.user.createdAt,
           },
           apiKey: result.apiKey,
+          token: result.token, // Agora retorna o JWT Token também
         },
       });
     } catch (error: any) {
