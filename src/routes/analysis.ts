@@ -17,16 +17,15 @@ router.use(logApiRequest);
 router.use(logRateLimit);
 router.use(generalRateLimit);
 
-// Rotas protegidas por API Key (para usuários não logados)
+// Rotas protegidas por JWT (para usuários logados)
 router.post(
   "/",
-  authenticateApiKey,
+  authenticateToken, // Agora requer JWT Token
   analysisRateLimit,
   validateTextAnalysis,
   analysisController.analyze
 );
 
-// Rotas protegidas por JWT (para usuários logados)
 router.get("/stats/queue", authenticateToken, analysisController.getQueueStats);
 router.get("/stats/user", authenticateToken, analysisController.getUserStats);
 router.get(
