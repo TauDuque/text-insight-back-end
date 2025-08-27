@@ -1,29 +1,16 @@
 #!/bin/sh
 set -e
 
-echo "--- [DIAGNÓSTICO FINAL] ---"
-echo " "
-echo "--- 1. Listando todos os arquivos (incluindo ocultos) no diretório /app ---"
-ls -la /app
-echo " "
+echo "--- [Entrypoint] Executando Prisma Generate (sabemos que funciona) ---"
+npx prisma generate
 
-echo "--- 2. Verificando o conteúdo do arquivo .env, se ele existir ---"
-if [ -f ".env" ]; then
-  echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-  echo "!!! ALERTA: ARQUIVO .ENV ENCONTRADO NO DEPLOY !!!"
-  echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-  echo "Conteúdo do .env:"
-  cat .env
-else
-  echo "--- Info: Arquivo .env não foi encontrado. ---"
-fi
-echo " "
+echo "--- [Entrypoint] Iniciando a aplicação Node.js com INJEÇÃO EXPLÍCITA de variáveis ---"
 
-echo "--- 3. Imprimindo todas as variáveis de ambiente disponíveis para o SHELL ---"
-printenv
-echo " "
+# Esta é a mudança crucial.
+# Em vez de apenas 'exec node ...', nós prefixamos o comando
+# com as variáveis de ambiente que queremos garantir que ele receba.
+# O shell pega os valores das variáveis que ele já possui ($DATABASE_URL, etc.)
+# e os atribui especificamente para o processo 'node' que está sendo iniciado.
+# Isso ignora qualquer problema de herança ou limpeza que possa estar ocorrendo.
 
-echo "--- Fim do diagnóstico. O script será interrompido para análise. ---"
-# A linha abaixo força o deploy a 'falhar' de propósito depois de imprimir tudo,
-# para que possamos ler os logs com calma.
-exit 1
+exec DATABASE_URL=$DATABASE_URL REDIS_URL=$REDIS_URL NODE_ENV=$NODE_ENV node dist/app.js
