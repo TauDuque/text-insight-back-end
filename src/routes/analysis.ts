@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { AnalysisController } from "../controllers/AnalysisController";
-import { authenticateApiKey, authenticateToken } from "../middlewares/auth";
+import { authenticateToken } from "../middlewares/auth";
 import { analysisRateLimit, generalRateLimit } from "../middlewares/rateLimit";
 import { logApiRequest, logRateLimit } from "../middlewares/logging";
 import {
@@ -17,10 +17,10 @@ router.use(logApiRequest);
 router.use(logRateLimit);
 router.use(generalRateLimit);
 
-// Rotas protegidas por JWT (para usuários logados)
+// Rotas protegidas por JWT (para usuários logados via frontend)
 router.post(
   "/",
-  authenticateToken, // Agora requer JWT Token
+  authenticateToken,
   analysisRateLimit,
   validateTextAnalysis,
   analysisController.analyze
@@ -35,21 +35,21 @@ router.get(
   analysisController.getUserAnalyses
 );
 
-// Rotas protegidas por API Key (para status da fila)
+// Rotas protegidas por JWT (para usuários logados via frontend)
 router.get(
   "/:analysisId",
-  authenticateApiKey,
+  authenticateToken,
   validateAnalysisId,
   analysisController.getAnalysis
 );
+
 router.post(
   "/:analysisId/retry",
-  authenticateApiKey,
+  authenticateToken,
   validateAnalysisId,
   analysisController.retryAnalysis
 );
 
-// Rotas protegidas por JWT (para ações pessoais)
 router.delete(
   "/:analysisId",
   authenticateToken,
