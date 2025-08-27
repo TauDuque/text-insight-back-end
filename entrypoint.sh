@@ -17,4 +17,4 @@ else
 fi
 
 # Iniciando a aplicação com todas as variáveis necessárias
-exec DATABASE_URL=$DATABASE_URL REDIS_URL=$REDIS_URL NODE_ENV=$NODE_ENV node dist/app.js
+exec node dist/app.js
