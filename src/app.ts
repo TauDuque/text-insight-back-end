@@ -14,7 +14,6 @@ import analysisRoutes from "./routes/analysis";
 // Importar worker (isso iniciará o processamento)
 import "./workers/textAnalysisWorker";
 
-dotenv.config();
 if (process.env.NODE_ENV !== "production") {
   dotenv.config();
 }
