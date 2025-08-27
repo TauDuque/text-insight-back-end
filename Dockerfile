@@ -10,17 +10,17 @@ RUN npm run build
 FROM node:18-alpine
 WORKDIR /app
 
-# Copia apenas o necessário do estágio de build
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
 
-# Copia e prepara o nosso script de inicialização
 COPY entrypoint.sh .
 RUN chmod +x entrypoint.sh
 
 EXPOSE 3000
 
-# O ENTRYPOINT agora aponta para o nosso script.
-# O comando que ele executa virá do railway.json
+# Define o nosso script como o ponto de entrada
 ENTRYPOINT ["./entrypoint.sh"]
+
+# Define o comando PADRÃO que o entrypoint irá executar
+CMD ["node", "dist/app.js"]
