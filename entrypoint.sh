@@ -4,13 +4,17 @@ set -e
 echo "--- [Entrypoint] Executando Prisma Generate (sabemos que funciona) ---"
 npx prisma generate
 
-echo "--- [Entrypoint] Iniciando a aplicação Node.js com INJEÇÃO EXPLÍCITA de variáveis ---"
+echo "--- [Entrypoint] Iniciando a aplicação Node.js com CONEXÃO SEPARADA do banco ---"
 
-# Esta é a mudança crucial.
-# Em vez de apenas 'exec node ...', nós prefixamos o comando
-# com as variáveis de ambiente que queremos garantir que ele receba.
-# O shell pega os valores das variáveis que ele já possui ($DATABASE_URL, etc.)
-# e os atribui especificamente para o processo 'node' que está sendo iniciado.
-# Isso ignora qualquer problema de herança ou limpeza que possa estar ocorrendo.
+# Construindo a DATABASE_URL a partir de variáveis separadas
+# Formato: postgresql://username:password@host:port/database
+if [ -n "$DB_USERNAME" ] && [ -n "$DB_PASSWORD" ] && [ -n "$DB_HOST" ] && [ -n "$DB_PORT" ] && [ -n "$DB_NAME" ]; then
+    echo "--- [Entrypoint] Usando variáveis separadas do banco ---"
+    export DATABASE_URL="postgresql://${DB_USERNAME}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}"
+    echo "--- [Entrypoint] DATABASE_URL construída: postgresql://${DB_USERNAME}:***@${DB_HOST}:${DB_PORT}/${DB_NAME} ---"
+else
+    echo "--- [Entrypoint] Usando DATABASE_URL completa (fallback) ---"
+fi
 
+# Iniciando a aplicação com todas as variáveis necessárias
 exec DATABASE_URL=$DATABASE_URL REDIS_URL=$REDIS_URL NODE_ENV=$NODE_ENV node dist/app.js
