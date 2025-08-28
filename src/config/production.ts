@@ -62,7 +62,9 @@ export const applyProductionConfig = () => {
     // Configurar garbage collection
     if (global.gc) {
       setInterval(() => {
-        global.gc();
+        if (global.gc) {
+          global.gc();
+        }
       }, PRODUCTION_CONFIG.MEMORY.GC_INTERVAL);
     }
 
