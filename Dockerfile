@@ -14,7 +14,7 @@ WORKDIR /app
 COPY package*.json ./
 COPY prisma ./prisma/
 
-# Instalar dependências
+# Instalar dependências (rimraf e copyfiles agora estão em dependencies)
 RUN npm ci --only=production && npm cache clean --force
 
 # Gerar cliente Prisma
