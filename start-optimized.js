@@ -6,8 +6,7 @@
  */
 
 // Configurações de otimização para Node.js
-process.env.NODE_OPTIONS =
-  "--max-old-space-size=512 --expose-gc --optimize-for-size";
+process.env.NODE_OPTIONS = "--max-old-space-size=512 --optimize-for-size";
 
 // Configurações de garbage collection
 process.env.NODE_GC_INTERVAL = "900000"; // 15 minutos

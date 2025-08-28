@@ -59,15 +59,6 @@ export const applyProductionConfig = () => {
     // Configurar Node.js para produção
     process.env.NODE_OPTIONS = `--max-old-space-size=${PRODUCTION_CONFIG.MEMORY.MAX_HEAP_SIZE}`;
 
-    // Configurar garbage collection
-    if (global.gc) {
-      setInterval(() => {
-        if (global.gc) {
-          global.gc();
-        }
-      }, PRODUCTION_CONFIG.MEMORY.GC_INTERVAL);
-    }
-
     console.log("🚀 Configurações de produção aplicadas");
   }
 };
