@@ -7,6 +7,8 @@
     "dev": "nodemon --exec ts-node src/app.ts",
     "build": "rm -rf dist && prisma generate && tsc && mkdir -p dist/prisma && cp prisma/schema.prisma dist/prisma/",
     "start": "NODE_ENV=production node dist/app.js",
+    "start:optimized": "NODE_ENV=production node start-optimized.js",
+    "start:cluster": "NODE_ENV=production node start-optimized.js",
     "test": "cross-env NODE_ENV=test jest",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",

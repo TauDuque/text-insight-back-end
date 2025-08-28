@@ -1,26 +1,74 @@
-# Estágio 1: Builder
-FROM node:18 AS builder
+# Dockerfile otimizado para produção
+# Reduz significativamente o tamanho da imagem e consumo de recursos
+
+# Usar Node.js Alpine para imagem menor
+FROM node:18-alpine AS builder
+
+# Instalar dependências necessárias para compilação
+RUN apk add --no-cache python3 make g++
+
+# Definir diretório de trabalho
 WORKDIR /app
+
+# Copiar arquivos de dependências
 COPY package*.json ./
-RUN npm install
+COPY prisma ./prisma/
+
+# Instalar dependências
+RUN npm ci --only=production && npm cache clean --force
+
+# Gerar cliente Prisma
+RUN npx prisma generate
+
+# Copiar código fonte
 COPY . .
+
+# Compilar TypeScript
 RUN npm run build
 
-# Estágio 2: Production
-FROM node:18-alpine
+# Remover dependências de desenvolvimento
+RUN rm -rf node_modules
+RUN npm ci --only=production && npm cache clean --force
+
+# Imagem de produção
+FROM node:18-alpine AS production
+
+# Criar usuário não-root para segurança
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S nodejs -u 1001
+
+# Instalar apenas dependências necessárias para runtime
+RUN apk add --no-cache dumb-init
+
+# Definir diretório de trabalho
 WORKDIR /app
 
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/prisma ./prisma
+# Copiar arquivos compilados e dependências
+COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
+COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=nodejs:nodejs /app/package*.json ./
+COPY --from=builder --chown=nodejs:nodejs /app/prisma ./prisma
+COPY --from=builder --chown=nodejs:nodejs /app/start-optimized.js ./
 
-COPY entrypoint.sh .
-RUN chmod +x entrypoint.sh
+# Configurações de segurança
+RUN chown -R nodejs:nodejs /app
 
-EXPOSE 3000
+# Mudar para usuário não-root
+USER nodejs
 
-# Define o nosso script como o ponto de entrada
-ENTRYPOINT ["./entrypoint.sh"]
+# Configurações de produção
+ENV NODE_ENV=production
+ENV NODE_OPTIONS="--max-old-space-size=512 --expose-gc --optimize-for-size"
 
-# Define o comando PADRÃO que o entrypoint irá executar
-CMD ["node", "dist/app.js"]
+# Expor porta
+EXPOSE 3001
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:3001/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
+
+# Usar dumb-init para gerenciar processos
+ENTRYPOINT ["dumb-init", "--"]
+
+# Comando de inicialização otimizado
+CMD ["node", "start-optimized.js"]

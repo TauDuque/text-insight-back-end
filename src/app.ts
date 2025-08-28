@@ -20,16 +20,25 @@ if (process.env.NODE_ENV !== "production") {
 
 export const app = express();
 
-// Middlewares de segurança e logging
-app.use(helmet());
+// Configurações de segurança otimizadas
+app.use(
+  helmet({
+    contentSecurityPolicy: false, // Desabilitar CSP para reduzir overhead
+    hsts: false, // Desabilitar HSTS para reduzir overhead
+  })
+);
+
+// CORS otimizado
 app.use(
   cors({
     origin: process.env.FRONTEND_URL || "http://localhost:3000",
     credentials: true,
     allowedHeaders: ["Content-Type", "Authorization", "X-API-Key"],
+    maxAge: 86400, // Cache CORS por 24 horas
   })
 );
-// Morgan para logs HTTP padrão
+
+// Morgan otimizado para logs HTTP
 app.use(
   morgan("combined", {
     stream: {
@@ -37,25 +46,42 @@ app.use(
         Logger.info(`🌐 HTTP: ${message.trim()}`);
       },
     },
+    skip: (req, _res) => {
+      // Pular logs para rotas de health check e favicon
+      return req.url === "/health" || req.url === "/favicon.ico";
+    },
   })
 );
 
-// Middleware personalizado para logs detalhados
+// Middleware personalizado para logs detalhados (otimizado)
 app.use(requestLogger);
 
-app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ extended: true }));
+// Parsers otimizados
+app.use(
+  express.json({
+    limit: "5mb", // Reduzir limite de 10mb para 5mb
+    strict: true, // Habilitar modo estrito
+  })
+);
+app.use(
+  express.urlencoded({
+    extended: true,
+    limit: "1mb", // Limitar dados de formulário
+  })
+);
 
 // Rotas
 app.use("/api/auth", authRoutes);
 app.use("/api/analyze", analysisRoutes);
 
-// Health check
+// Health check otimizado
 app.get("/health", (req, res) => {
   res.json({
     status: "OK",
     timestamp: new Date().toISOString(),
     version: "1.0.0",
+    memory: process.memoryUsage(),
+    uptime: process.uptime(),
   });
 });
 
@@ -72,6 +98,38 @@ app.use("*", (req, res) => {
 
 const PORT = process.env.PORT || 3001;
 
+// Função para limpeza de memória
+const cleanupMemory = () => {
+  try {
+    // Forçar garbage collection se disponível
+    if (global.gc) {
+      global.gc();
+      Logger.info("🧹 Garbage collection executado");
+    }
+
+    // Log de uso de memória
+    const memUsage = process.memoryUsage();
+    Logger.info(
+      `💾 Uso de memória: ${Math.round(memUsage.heapUsed / 1024 / 1024)}MB`
+    );
+  } catch (error) {
+    Logger.warn("⚠️ Erro na limpeza de memória:", error);
+  }
+};
+
+// Função para limpeza de conexões
+const cleanupConnections = async () => {
+  try {
+    // Limpar conexões do Prisma
+    if ((global as any).prisma) {
+      await (global as any).prisma.$disconnect();
+      Logger.info("🗄️ Conexões do banco limpas");
+    }
+  } catch (error) {
+    Logger.warn("⚠️ Erro ao limpar conexões:", error);
+  }
+};
+
 async function startServer() {
   try {
     await connectDatabase();
@@ -81,12 +139,29 @@ async function startServer() {
       Logger.success(`🚀 Servidor rodando na porta ${PORT}`);
       Logger.info(`📖 Health check: http://localhost:${PORT}/health`);
       Logger.info(`🔍 Análise: http://localhost:${PORT}/api/analyze`);
+
+      // Configurar limpeza automática
+      setInterval(cleanupMemory, 15 * 60 * 1000); // A cada 15 minutos
+      setInterval(cleanupConnections, 60 * 60 * 1000); // A cada 1 hora
     });
   } catch (error) {
     Logger.error("❌ Erro ao iniciar servidor:", error);
     process.exit(1);
   }
 }
+
+// Graceful shutdown
+process.on("SIGTERM", async () => {
+  Logger.info("🛑 Recebido SIGTERM, encerrando servidor...");
+  await cleanupConnections();
+  process.exit(0);
+});
+
+process.on("SIGINT", async () => {
+  Logger.info("🛑 Recebido SIGINT, encerrando servidor...");
+  await cleanupConnections();
+  process.exit(0);
+});
 
 // Inicia o servidor apenas se não estiver em ambiente de teste
 if (process.env.NODE_ENV !== "test") {
