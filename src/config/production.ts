@@ -52,13 +52,3 @@ export const PRODUCTION_CONFIG = {
     SKIP_SUCCESSFUL_REQUESTS: true, // Pular rate limiting para requisições bem-sucedidas
   },
 };
-
-// Função para aplicar configurações de produção
-export const applyProductionConfig = () => {
-  if (process.env.NODE_ENV === "production") {
-    // Configurar Node.js para produção
-    process.env.NODE_OPTIONS = `--max-old-space-size=${PRODUCTION_CONFIG.MEMORY.MAX_HEAP_SIZE}`;
-
-    console.log("🚀 Configurações de produção aplicadas");
-  }
-};

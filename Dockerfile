@@ -58,7 +58,8 @@ USER nodejs
 
 # Configurações de produção
 ENV NODE_ENV=production
-ENV NODE_OPTIONS="--max-old-space-size=512 --optimize-for-size"
+# Railway não permite flags customizadas de NODE_OPTIONS
+# ENV NODE_OPTIONS="--max-old-space-size=512 --optimize-for-size"
 
 # Expor porta
 EXPOSE 3001
