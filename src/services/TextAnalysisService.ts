@@ -1,4 +1,3 @@
-import compromise from "compromise";
 import Sentiment from "sentiment";
 
 export interface TextAnalysisResult {
@@ -57,70 +56,24 @@ export interface QueueResponse {
 export class TextAnalysisService {
   private sentiment = new Sentiment();
   private cache = new Map<string, any>();
-  private readonly CACHE_SIZE = 100;
-  private readonly DIRECT_PROCESSING_LIMIT = 25000; // 25KB - processamento direto
-  private readonly QUEUE_LIMIT = 50000; // 50KB - limite máximo
+  private readonly CACHE_SIZE = 50; // ✅ REDUZIDO: Cache menor
+  private readonly MAX_TEXT_SIZE = 2000; // ✅ DRASTICAMENTE REDUZIDO: 2KB máximo
 
-  async analyzeText(text: string): Promise<TextAnalysisResult | QueueResponse> {
+  async analyzeText(text: string): Promise<QueueResponse> {
     const textSize = text.length;
 
-    // 🔴 Textos muito grandes: rejeitados
-    if (textSize > this.QUEUE_LIMIT) {
+    // ✅ TUDO VAI PARA FILA - Sem processamento direto
+    if (textSize > this.MAX_TEXT_SIZE) {
       throw new Error(
-        `Sentimos muito mas o texto inserido é muito longo. Máximo permitido: ${this.QUEUE_LIMIT / 1000}KB`
+        `Texto muito longo. Máximo permitido: ${this.MAX_TEXT_SIZE / 1000}KB`
       );
     }
 
-    // 🟡 Textos médios: vão para fila
-    if (textSize > this.DIRECT_PROCESSING_LIMIT) {
-      return this.addToQueue(text);
-    }
-
-    // 🟢 Textos pequenos: processamento direto
-    return this.analyzeTextDirectly(text);
+    // ✅ SEMPRE retornar resposta de fila
+    return this.addToQueue(text);
   }
 
-  private async analyzeTextDirectly(text: string): Promise<TextAnalysisResult> {
-    const startTime = Date.now();
-
-    // Verificar cache primeiro
-    const cacheKey = this.generateCacheKey(text);
-    if (this.cache.has(cacheKey)) {
-      return this.cache.get(cacheKey);
-    }
-
-    try {
-      // Análises básicas (otimizadas para processamento direto)
-      const basic = this.getBasicAnalysis(text);
-
-      // Análises linguísticas (otimizadas)
-      const linguistic = await this.getLinguisticAnalysis(text);
-
-      // Análises avançadas (completas para textos pequenos)
-      const advanced = this.getAdvancedAnalysis(text);
-
-      const processingTime = Date.now() - startTime;
-
-      const result = {
-        basic,
-        linguistic,
-        advanced,
-        metadata: {
-          processingTime,
-          analyzedAt: new Date().toISOString(),
-          processingType: "direct",
-        },
-      } as any;
-
-      // Armazenar no cache
-      this.setCache(cacheKey, result);
-
-      return result;
-    } catch (error) {
-      console.error("Erro na análise direta de texto:", error);
-      throw new Error("Falha ao analisar o texto diretamente");
-    }
-  }
+  // ✅ REMOVIDO: analyzeTextDirectly - TUDO vai para fila
 
   private addToQueue(text: string): QueueResponse {
     const textSize = text.length;
@@ -128,9 +81,6 @@ export class TextAnalysisService {
 
     // Gerar ID único para a fila
     const queueId = this.generateQueueId();
-
-    // TODO: Implementar lógica real da fila (Bull/Redis)
-    // Por enquanto, retornamos resposta simulada
 
     return {
       queueId,
@@ -141,42 +91,42 @@ export class TextAnalysisService {
   }
 
   private calculateEstimatedTime(textSize: number): number {
-    // Estimativa baseada no tamanho do texto
-    // Textos de 25-50KB: 30 segundos a 2 minutos
-    const baseTime = 30; // 30 segundos base
-    const timePerKB = 2; // 2 segundos por KB adicional
+    // ✅ ESTIMATIVA MAIS REALISTA: 5-15 segundos para textos pequenos
+    const baseTime = 5; // 5 segundos base
+    const timePerKB = 0.5; // 0.5 segundos por KB adicional
 
-    return Math.min(baseTime + (textSize / 1000) * timePerKB, 120); // Máximo 2 minutos
+    return Math.min(baseTime + (textSize / 1000) * timePerKB, 15); // Máximo 15 segundos
   }
 
   private generateQueueId(): string {
-    // Gerar ID único para identificação na fila
     const timestamp = Date.now();
     const random = Math.random().toString(36).substring(2, 8);
     return `queue_${timestamp}_${random}`;
   }
 
-  private generateCacheKey(text: string): string {
-    // Criar hash simples para o texto
-    let hash = 0;
-    const str = text.substring(0, 100); // Usar apenas os primeiros 100 caracteres
-    for (let i = 0; i < str.length; i++) {
-      const char = str.charCodeAt(i);
-      hash = (hash << 5) - hash + char;
-      hash = hash & hash; // Convert to 32bit integer
-    }
-    return hash.toString();
-  }
+  // ✅ REMOVIDO: generateCacheKey, setCache - Sem cache para textos pequenos
 
-  private setCache(key: string, value: any): void {
-    // Limpar cache se estiver muito grande
-    if (this.cache.size >= this.CACHE_SIZE) {
-      const firstKey = this.cache.keys().next().value;
-      if (firstKey !== undefined) {
-        this.cache.delete(firstKey);
-      }
+  // ✅ FUNÇÃO SIMPLIFICADA PARA PROCESSAMENTO EM FILA
+  async processQueuedText(text: string): Promise<TextAnalysisResult> {
+    try {
+      // ✅ ANÁLISE BÁSICA SIMPLIFICADA (sem compromise)
+      const basic = this.getBasicAnalysis(text);
+
+      // ✅ ANÁLISE LINGUÍSTICA SIMPLIFICADA
+      const linguistic = await this.getLinguisticAnalysis(text);
+
+      // ✅ ANÁLISE AVANÇADA SIMPLIFICADA
+      const advanced = this.getBasicAdvancedAnalysis(text);
+
+      return {
+        basic,
+        linguistic,
+        advanced,
+      };
+    } catch (error) {
+      console.error("Erro no processamento em fila:", error);
+      throw new Error("Falha ao processar texto em fila");
     }
-    this.cache.set(key, value);
   }
 
   private getBasicAnalysis(text: string) {
@@ -212,34 +162,28 @@ export class TextAnalysisService {
   }
 
   private async getLinguisticAnalysis(text: string) {
-    // Análise de sentimento (mais eficiente)
+    // ✅ ANÁLISE DE SENTIMENTO SIMPLIFICADA
     const sentimentResult = this.sentiment.analyze(text);
     const sentimentClassification = this.classifySentiment(
       sentimentResult.comparative
     );
 
-    // Análise de legibilidade (otimizada)
+    // ✅ ANÁLISE DE LEGIBILIDADE SIMPLIFICADA
     const readability = this.calculateReadability(text);
 
-    // Extração de palavras-chave (limitada para textos longos)
-    const keywords =
-      text.length > 5000
-        ? this.extractBasicKeywords(text)
-        : this.extractKeywords(text);
+    // ✅ PALAVRAS-CHAVE SIMPLIFICADAS (sem compromise)
+    const keywords = this.extractBasicKeywords(text);
 
-    // Extração de entidades (limitada para textos longos)
-    const entities =
-      text.length > 5000
-        ? this.extractBasicEntities(text)
-        : this.extractEntities(text);
+    // ✅ ENTIDADES SIMPLIFICADAS (sem compromise)
+    const entities = this.extractBasicEntities(text);
 
     return {
       sentiment: {
         score: sentimentResult.score,
         comparative: Math.round(sentimentResult.comparative * 1000) / 1000,
         classification: sentimentClassification,
-        positive: sentimentResult.positive.slice(0, 10), // Limitar a 10 palavras
-        negative: sentimentResult.negative.slice(0, 10), // Limitar a 10 palavras
+        positive: sentimentResult.positive.slice(0, 5), // ✅ LIMITADO: 5 palavras
+        negative: sentimentResult.negative.slice(0, 5), // ✅ LIMITADO: 5 palavras
       },
       readability,
       keywords,
@@ -248,7 +192,7 @@ export class TextAnalysisService {
   }
 
   private getBasicAdvancedAnalysis(text: string) {
-    const words = text.toLowerCase().match(/\b\w+\b/g) || [];
+    const words = text.toLowerCase().split(/\s+/);
     const uniqueWords = new Set(words);
 
     return {
@@ -259,24 +203,7 @@ export class TextAnalysisService {
         words.length > 0
           ? Math.round((uniqueWords.size / words.length) * 10000) / 10000
           : 0,
-      mostFrequentWords: this.getBasicWordFrequency(words).slice(0, 5), // Apenas top 5
-    };
-  }
-
-  private getAdvancedAnalysis(text: string) {
-    const words = text.toLowerCase().match(/\b\w+\b/g) || [];
-    const uniqueWords = new Set(words);
-    const wordFrequency = this.getWordFrequency(words);
-
-    return {
-      languageDetection: this.detectLanguage(text),
-      textComplexity: this.calculateTextComplexity(text),
-      uniqueWords: uniqueWords.size,
-      lexicalDiversity:
-        words.length > 0
-          ? Math.round((uniqueWords.size / words.length) * 10000) / 10000
-          : 0,
-      mostFrequentWords: wordFrequency.slice(0, 10),
+      mostFrequentWords: this.getBasicWordFrequency(words).slice(0, 3), // ✅ LIMITADO: 3 palavras
     };
   }
 
@@ -339,7 +266,16 @@ export class TextAnalysisService {
     return syllableCount;
   }
 
-  private classifyReadingDifficulty(score: number) {
+  private classifyReadingDifficulty(
+    score: number
+  ):
+    | "very easy"
+    | "easy"
+    | "fairly easy"
+    | "standard"
+    | "fairly difficult"
+    | "difficult"
+    | "very difficult" {
     if (score >= 90) return "very easy";
     if (score >= 80) return "easy";
     if (score >= 70) return "fairly easy";
@@ -350,7 +286,7 @@ export class TextAnalysisService {
   }
 
   private extractBasicKeywords(text: string): string[] {
-    // ✅ REGEX SIMPLIFICADO: Usar split em vez de regex complexo
+    // ✅ VERSÃO SIMPLIFICADA: Sem compromise
     const words = text
       .toLowerCase()
       .split(/\s+/)
@@ -428,54 +364,22 @@ export class TextAnalysisService {
       "essa",
       "num",
       "nem",
-      "suas",
       "meu",
       "às",
       "minha",
       "têm",
-      "numa",
-      "pelos",
-      "pelas",
-      "essas",
-      "esses",
-      "pelas",
-      "esta",
-      "estes",
-      "estas",
-      "aquele",
-      "aquela",
-      "aqueles",
-      "aquelas",
-      "isto",
       "aquilo",
     ]);
 
-    const keywords = words.filter(word => !stopWords.has(word)).slice(0, 10); // Limitar a 10 palavras-chave
+    const keywords = words.filter(word => !stopWords.has(word)).slice(0, 5); // ✅ LIMITADO: 5 palavras-chave
 
     return [...new Set(keywords)]; // Remover duplicatas
   }
 
-  private extractKeywords(text: string): string[] {
-    try {
-      const doc = compromise(text);
-      const nouns = doc.nouns().out("array");
-      const adjectives = doc.adjectives().out("array");
-
-      const keywords = [...nouns, ...adjectives]
-        .filter(word => word.length > 3)
-        .map(word => word.toLowerCase())
-        .filter((word, index, arr) => arr.indexOf(word) === index)
-        .slice(0, 15);
-
-      return keywords;
-    } catch {
-      // Fallback para versão básica se compromise falhar
-      return this.extractBasicKeywords(text);
-    }
-  }
+  // ✅ REMOVIDO: extractKeywords (com compromise) - Muito custoso
 
   private extractBasicEntities(_text: string): any {
-    // Versão simplificada para textos longos
+    // ✅ VERSÃO SIMPLIFICADA: Sem compromise
     return {
       people: [],
       places: [],
@@ -483,23 +387,10 @@ export class TextAnalysisService {
     };
   }
 
-  private extractEntities(text: string) {
-    try {
-      const doc = compromise(text);
-
-      return {
-        people: doc.people().out("array").slice(0, 10),
-        places: doc.places().out("array").slice(0, 10),
-        organizations: doc.organizations().out("array").slice(0, 10),
-      };
-    } catch {
-      // Fallback para versão básica se compromise falhar
-      return this.extractBasicEntities(text);
-    }
-  }
+  // ✅ REMOVIDO: extractEntities (com compromise) - Muito custoso
 
   private detectLanguage(text: string): string {
-    // Implementação simples de detecção de idioma
+    // ✅ IMPLEMENTAÇÃO SIMPLES: Sem bibliotecas externas
     const portugueseWords = [
       "que",
       "não",
@@ -537,7 +428,6 @@ export class TextAnalysisService {
       "del",
     ];
 
-    // ✅ REGEX SIMPLIFICADO: Usar split em vez de regex complexo
     const words = text.toLowerCase().split(/\s+/);
 
     const ptCount = words.filter(word => portugueseWords.includes(word)).length;
@@ -552,7 +442,7 @@ export class TextAnalysisService {
   }
 
   private calculateBasicTextComplexity(text: string): number {
-    const words = text.match(/\b\w+\b/g) || [];
+    const words = text.split(/\s+/);
     if (words.length === 0) return 0;
 
     const avgWordLength =
@@ -560,18 +450,7 @@ export class TextAnalysisService {
     return Math.round(avgWordLength * 10) / 10;
   }
 
-  private calculateTextComplexity(text: string): number {
-    const words = text.match(/\b\w+\b/g) || [];
-    if (words.length === 0) return 0;
-
-    const avgWordLength =
-      words.reduce((sum, word) => sum + word.length, 0) / words.length;
-    const longWords = words.filter(word => word.length > 6).length;
-    const longWordRatio = longWords / words.length;
-
-    // Complexidade baseada no tamanho médio das palavras e proporção de palavras longas
-    return Math.round((avgWordLength * 0.5 + longWordRatio * 10) * 100) / 100;
-  }
+  // ✅ REMOVIDO: calculateTextComplexity (complexo) - Muito custoso
 
   private getBasicWordFrequency(
     words: string[]
@@ -663,25 +542,10 @@ export class TextAnalysisService {
       "essa",
       "num",
       "nem",
-      "suas",
       "meu",
       "às",
       "minha",
       "têm",
-      "numa",
-      "pelos",
-      "pelas",
-      "essas",
-      "esses",
-      "pelas",
-      "esta",
-      "estes",
-      "estas",
-      "aquele",
-      "aquela",
-      "aqueles",
-      "aquelas",
-      "isto",
       "aquilo",
     ]);
 
@@ -697,14 +561,7 @@ export class TextAnalysisService {
       .sort((a, b) => b.count - a.count);
   }
 
-  private getWordFrequency(
-    words: string[]
-  ): Array<{ word: string; count: number }> {
-    return this.getBasicWordFrequency(words);
-  }
+  // ✅ REMOVIDO: getWordFrequency (complexo) - Muito custoso
 
-  // Método para limpar cache e liberar memória
-  public clearCache(): void {
-    this.cache.clear();
-  }
+  // ✅ REMOVIDO: clearCache - Sem cache para textos pequenos
 }
