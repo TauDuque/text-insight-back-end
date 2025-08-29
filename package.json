@@ -6,9 +6,9 @@
   "scripts": {
     "dev": "nodemon --exec ts-node src/app.ts",
     "build": "rimraf dist && prisma generate && tsc && copyfiles \"prisma/schema.prisma\" dist/",
-    "start": "NODE_ENV=production node dist/app.js",
-    "start:optimized": "NODE_ENV=production node start-optimized.js",
-    "start:cluster": "NODE_ENV=production node start-optimized.js",
+    "start": "cross-env NODE_ENV=production node dist/app.js",
+    "start:optimized": "cross-env NODE_ENV=production node start-optimized.js",
+    "start:cluster": "cross-env NODE_ENV=production node start-optimized.js",
     "test": "cross-env NODE_ENV=test jest",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",

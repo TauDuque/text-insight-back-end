@@ -183,10 +183,16 @@ export class TextAnalysisService {
     const characterCount = text.length;
     const characterCountNoSpaces = text.replace(/\s/g, "").length;
 
-    // Otimização: usar regex mais eficiente
-    const words = text.match(/\b\w+\b/g) || [];
-    const sentences = text.match(/[^.!?]+[.!?]+/g) || [];
-    const paragraphs = text.split(/\n\s*\n/).filter(p => p.trim().length > 0);
+    // ✅ REGEX SIMPLIFICADO: Usar split em vez de regex complexo
+    const words = text.split(/\s+/).filter(word => word.length > 0);
+
+    // ✅ REGEX SIMPLIFICADO: Usar split por pontuação
+    const sentences = text
+      .split(/[.!?]+/)
+      .filter(sentence => sentence.trim().length > 0);
+
+    // ✅ REGEX SIMPLIFICADO: Usar split por quebras de linha
+    const paragraphs = text.split(/\n+/).filter(p => p.trim().length > 0);
 
     return {
       characterCount,
@@ -283,8 +289,11 @@ export class TextAnalysisService {
   }
 
   private calculateReadability(text: string) {
-    const sentences = text.match(/[^.!?]+[.!?]+/g) || [];
-    const words = text.match(/\b\w+\b/g) || [];
+    // ✅ REGEX SIMPLIFICADO: Usar split em vez de regex complexo
+    const sentences = text
+      .split(/[.!?]+/)
+      .filter(sentence => sentence.trim().length > 0);
+    const words = text.split(/\s+/).filter(word => word.length > 0);
 
     if (sentences.length === 0 || words.length === 0) {
       return {
@@ -341,8 +350,12 @@ export class TextAnalysisService {
   }
 
   private extractBasicKeywords(text: string): string[] {
-    // Versão simplificada para textos longos
-    const words = text.toLowerCase().match(/\b\w{4,}\b/g) || [];
+    // ✅ REGEX SIMPLIFICADO: Usar split em vez de regex complexo
+    const words = text
+      .toLowerCase()
+      .split(/\s+/)
+      .filter(word => word.length >= 4);
+
     const stopWords = new Set([
       "the",
       "and",
@@ -524,6 +537,7 @@ export class TextAnalysisService {
       "del",
     ];
 
+    // ✅ REGEX SIMPLIFICADO: Usar split em vez de regex complexo
     const words = text.toLowerCase().split(/\s+/);
 
     const ptCount = words.filter(word => portugueseWords.includes(word)).length;
