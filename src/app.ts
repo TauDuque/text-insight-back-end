@@ -132,20 +132,45 @@ const cleanupConnections = async () => {
 
 async function startServer() {
   try {
-    await connectDatabase();
-    await connectRedis();
+    // ✅ CONEXÃO RETARDADA: Iniciar servidor primeiro, conectar depois
+    Logger.info("🚀 Iniciando servidor...");
 
+    // Iniciar servidor primeiro (sem aguardar conexões)
     app.listen(PORT, () => {
       Logger.success(`🚀 Servidor rodando na porta ${PORT}`);
       Logger.info(`📖 Health check: http://localhost:${PORT}/health`);
       Logger.info(`🔍 Análise: http://localhost:${PORT}/api/analyze`);
-
-      // Configurar limpeza automática
-      setInterval(cleanupMemory, 15 * 60 * 1000); // A cada 15 minutos
-      setInterval(cleanupConnections, 60 * 60 * 1000); // A cada 1 hora
     });
+
+    // ✅ CONECTAR AO BANCO EM BACKGROUND (não bloquear startup)
+    setImmediate(async () => {
+      try {
+        Logger.info("🗄️ Conectando ao banco de dados...");
+        await connectDatabase();
+        Logger.info("✅ Banco de dados conectado com sucesso");
+      } catch (error) {
+        Logger.error("❌ Erro ao conectar com banco (não crítico):", error);
+        // ✅ NÃO PARAR A APLICAÇÃO - apenas logar o erro
+      }
+    });
+
+    // ✅ CONECTAR AO REDIS EM BACKGROUND
+    setImmediate(async () => {
+      try {
+        Logger.info("🔴 Conectando ao Redis...");
+        await connectRedis();
+        Logger.info("✅ Redis conectado com sucesso");
+      } catch (error) {
+        Logger.error("❌ Erro ao conectar com Redis (não crítico):", error);
+        // ✅ NÃO PARAR A APLICAÇÃO - apenas logar o erro
+      }
+    });
+
+    // Configurar limpeza automática
+    setInterval(cleanupMemory, 15 * 60 * 1000); // A cada 15 minutos
+    setInterval(cleanupConnections, 60 * 60 * 1000); // A cada 1 hora
   } catch (error) {
-    Logger.error("❌ Erro ao iniciar servidor:", error);
+    Logger.error("❌ Erro crítico ao iniciar servidor:", error);
     process.exit(1);
   }
 }
