@@ -1,46 +1,46 @@
 // backend/src/__tests__/analysis.test.ts
 import request from "supertest";
 import { app } from "../app";
-import { prisma } from "../config/database";
+import { getPrismaClient } from "../config/database";
+
+let testUser: any;
+let testApiKey: string;
 
 // Limpa o banco de dados antes de cada teste
 beforeEach(async () => {
+  const prisma = getPrismaClient();
   await prisma.analysis.deleteMany();
   await prisma.apiKey.deleteMany();
   await prisma.user.deleteMany();
+
+  // Criar usuário de teste
+  testUser = await prisma.user.create({
+    data: {
+      name: "Test User",
+      email: "testuser@example.com",
+      password: "hashedpassword",
+    },
+  });
+
+  // Criar API Key de teste
+  const apiKey = await prisma.apiKey.create({
+    data: {
+      key: "test-api-key-123",
+      name: "Test API Key",
+      userId: testUser.id,
+      isActive: true,
+    },
+  });
+  testApiKey = apiKey.key;
 });
 
 // Desconecta do Prisma após todos os testes
 afterAll(async () => {
+  const prisma = getPrismaClient();
   await prisma.$disconnect();
 });
 
 describe("Analysis Routes", () => {
-  let testUser: any;
-  let testApiKey: string;
-
-  beforeEach(async () => {
-    // Cria um usuário de teste
-    testUser = await prisma.user.create({
-      data: {
-        name: "Test User",
-        email: "test@example.com",
-        password: "HashedPass123", // Senha já hasheada para teste
-      },
-    });
-
-    // Cria uma API Key para o usuário
-    const apiKey = await prisma.apiKey.create({
-      data: {
-        key: "test-api-key-123",
-        name: "Test API Key",
-        userId: testUser.id,
-        isActive: true,
-      },
-    });
-    testApiKey = apiKey.key;
-  });
-
   describe("POST /api/analyze", () => {
     it("should return 401 without API key", async () => {
       const textData = {
