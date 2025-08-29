@@ -8,7 +8,9 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  // ✅ URL PLACEHOLDER: Será sobrescrita pelo código em runtime
+  // Isso permite que o Prisma funcione com variáveis separadas (DB_USERNAME, DB_PASSWORD, etc.)
+  url      = "postgresql://placeholder:placeholder@placeholder:5432/placeholder"
 }
 
 model User {
