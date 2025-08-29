@@ -7,7 +7,7 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
-// Função para obter instância do Prisma (lazy initialization)
+// Função para obter instância do Prisma (COMPLETAMENTE lazy)
 function getPrismaClient(): PrismaClient {
   if (!globalForPrisma.prisma) {
     // ✅ VERIFICAR SE DATABASE_URL ESTÁ DEFINIDA
@@ -26,10 +26,10 @@ function getPrismaClient(): PrismaClient {
   return globalForPrisma.prisma;
 }
 
-// Exportar prisma para manter compatibilidade com o resto da aplicação
-export const prisma = getPrismaClient();
+// ✅ NÃO EXPORTAR prisma DIRETAMENTE - isso causa inicialização imediata!
+// export const prisma = getPrismaClient(); ← REMOVIDO!
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+// ✅ REMOVIDO: globalForPrisma.prisma = prisma; (causava erro)
 
 // Função para conectar ao banco
 export async function connectDatabase() {
@@ -39,6 +39,7 @@ export async function connectDatabase() {
       throw new Error("DATABASE_URL não está definida no ambiente");
     }
 
+    const prisma = getPrismaClient(); // ← Inicializar AQUI
     await prisma.$connect();
     console.log("✅ Banco de dados conectado");
   } catch (error) {
@@ -49,5 +50,9 @@ export async function connectDatabase() {
 
 // Função para desconectar do banco
 export async function disconnectDatabase() {
+  const prisma = getPrismaClient(); // ← Obter instância AQUI
   await prisma.$disconnect();
 }
+
+// ✅ EXPORTAR APENAS A FUNÇÃO, NÃO A INSTÂNCIA
+export { getPrismaClient };

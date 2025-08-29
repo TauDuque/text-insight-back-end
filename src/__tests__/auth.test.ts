@@ -1,10 +1,11 @@
 // backend/src/__tests__/auth.test.ts
 import request from "supertest";
 import { app } from "../app"; // Importa a instância do app Express
-import { prisma } from "../config/database";
+import { getPrismaClient } from "../config/database";
 
 // Limpa o banco de dados antes de cada teste para garantir isolamento
 beforeEach(async () => {
+  const prisma = getPrismaClient();
   await prisma.analysis.deleteMany();
   await prisma.apiKey.deleteMany();
   await prisma.user.deleteMany();
@@ -12,6 +13,7 @@ beforeEach(async () => {
 
 // Desconecta do Prisma após todos os testes
 afterAll(async () => {
+  const prisma = getPrismaClient();
   await prisma.$disconnect();
 });
 
@@ -34,7 +36,7 @@ describe("Auth Routes - POST /api/auth/register", () => {
     expect(response.body.data).toHaveProperty("apiKey");
 
     // Verifica se o usuário foi criado no banco
-    const dbUser = await prisma.user.findUnique({
+    const dbUser = await getPrismaClient().user.findUnique({
       where: { email: userData.email },
     });
     expect(dbUser).not.toBeNull();
@@ -42,7 +44,7 @@ describe("Auth Routes - POST /api/auth/register", () => {
 
   it("should return status 400 if email is already in use", async () => {
     // Cria um usuário primeiro
-    await prisma.user.create({
+    await getPrismaClient().user.create({
       data: {
         name: "Existing User",
         email: "existing@example.com",

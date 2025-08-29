@@ -1,10 +1,12 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { v4 as uuidv4 } from "uuid";
-import { prisma } from "../config/database";
+import { getPrismaClient } from "../config/database";
 
 export class AuthService {
   async register(email: string, password: string, name: string) {
+    const prisma = getPrismaClient();
+
     // Verificar se o usuário já existe
     const existingUser = await prisma.user.findUnique({
       where: { email },
@@ -40,6 +42,8 @@ export class AuthService {
   }
 
   async login(email: string, password: string) {
+    const prisma = getPrismaClient();
+
     // Buscar usuário
     const user = await prisma.user.findUnique({
       where: { email },
@@ -66,6 +70,8 @@ export class AuthService {
   }
 
   async createApiKey(userId: string, name: string) {
+    const prisma = getPrismaClient();
+
     const key = `tia_${uuidv4().replace(/-/g, "")}`;
 
     const apiKey = await prisma.apiKey.create({
@@ -80,6 +86,8 @@ export class AuthService {
   }
 
   async validateApiKey(key: string) {
+    const prisma = getPrismaClient();
+
     const apiKey = await prisma.apiKey.findUnique({
       where: {
         key,
@@ -94,6 +102,8 @@ export class AuthService {
   }
 
   async getUserApiKeys(userId: string) {
+    const prisma = getPrismaClient();
+
     return await prisma.apiKey.findMany({
       where: { userId },
       orderBy: { createdAt: "desc" },
@@ -108,6 +118,8 @@ export class AuthService {
   }
 
   async revokeApiKey(keyId: string, userId: string) {
+    const prisma = getPrismaClient();
+
     const apiKey = await prisma.apiKey.findFirst({
       where: {
         id: keyId,
@@ -127,6 +139,8 @@ export class AuthService {
 
   // ✅ NOVO: Atualizar perfil do usuário
   async updateUserProfile(userId: string, data: { name?: string }) {
+    const prisma = getPrismaClient();
+
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data,
@@ -144,6 +158,8 @@ export class AuthService {
 
   // ✅ NOVO: Buscar usuário por ID
   async getUserById(userId: string) {
+    const prisma = getPrismaClient();
+
     return await prisma.user.findUnique({
       where: { id: userId },
       select: {

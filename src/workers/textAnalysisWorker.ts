@@ -1,7 +1,7 @@
 import { Job } from "bull";
 import { textAnalysisQueue } from "../config/queue";
 import { TextAnalysisService } from "../services/TextAnalysisService";
-import { prisma } from "../config/database";
+import { getPrismaClient } from "../config/database";
 import { cacheService } from "../services/CacheService";
 
 interface AnalysisJobData {
@@ -26,7 +26,7 @@ textAnalysisQueue.process(
 
     // Verificar tamanho do texto para evitar processamento excessivo
     if (text.length > MAX_TEXT_LENGTH) {
-      await prisma.analysis.update({
+      await getPrismaClient().analysis.update({
         where: { id: analysisId },
         data: {
           status: "FAILED",
@@ -41,7 +41,7 @@ textAnalysisQueue.process(
       console.log(`🔄 Iniciando análise ${analysisId} para usuário ${userId}`);
 
       // Atualizar status para PROCESSING
-      await prisma.analysis.update({
+      await getPrismaClient().analysis.update({
         where: { id: analysisId },
         data: { status: "PROCESSING" },
       });
@@ -63,7 +63,7 @@ textAnalysisQueue.process(
       job.progress(75);
 
       // Salvar resultados
-      await prisma.analysis.update({
+      await getPrismaClient().analysis.update({
         where: { id: analysisId },
         data: {
           status: "COMPLETED",
@@ -90,7 +90,7 @@ textAnalysisQueue.process(
       console.error(`❌ Erro na análise ${analysisId}:`, error);
 
       // Salvar erro
-      await prisma.analysis.update({
+      await getPrismaClient().analysis.update({
         where: { id: analysisId },
         data: {
           status: "FAILED",

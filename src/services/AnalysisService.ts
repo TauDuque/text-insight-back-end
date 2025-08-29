@@ -1,4 +1,4 @@
-import { prisma } from "../config/database";
+import { getPrismaClient } from "../config/database";
 import { textAnalysisQueue } from "../config/queue";
 import { TextAnalysisService } from "./TextAnalysisService";
 import { cacheService } from "./CacheService";
@@ -25,7 +25,7 @@ export class AnalysisService {
     const isLongText = text.length > 500;
 
     // Criar registro da análise
-    const analysis = await prisma.analysis.create({
+    const analysis = await getPrismaClient().analysis.create({
       data: {
         text,
         userId,
@@ -52,7 +52,7 @@ export class AnalysisService {
       );
 
       // Atualizar com jobId
-      await prisma.analysis.update({
+      await getPrismaClient().analysis.update({
         where: { id: analysis.id },
         data: { jobId: job.id.toString() },
       });
@@ -75,7 +75,7 @@ export class AnalysisService {
       try {
         const results = await this.textAnalysisService.analyzeText(text);
 
-        const updatedAnalysis = await prisma.analysis.update({
+        const updatedAnalysis = await getPrismaClient().analysis.update({
           where: { id: analysis.id },
           data: {
             status: "COMPLETED",
@@ -102,7 +102,7 @@ export class AnalysisService {
 
         return result;
       } catch (error) {
-        await prisma.analysis.update({
+        await getPrismaClient().analysis.update({
           where: { id: analysis.id },
           data: {
             status: "FAILED",
@@ -122,7 +122,7 @@ export class AnalysisService {
       return { ...cached, fromCache: true };
     }
 
-    const analysis = await prisma.analysis.findFirst({
+    const analysis = await getPrismaClient().analysis.findFirst({
       where: {
         id: analysisId,
         userId,
@@ -176,7 +176,7 @@ export class AnalysisService {
     const skip = (page - 1) * limit;
 
     const [analyses, total] = await Promise.all([
-      prisma.analysis.findMany({
+      getPrismaClient().analysis.findMany({
         where: { userId },
         orderBy: { createdAt: "desc" },
         skip,
@@ -191,7 +191,7 @@ export class AnalysisService {
           text: true,
         },
       }),
-      prisma.analysis.count({
+      getPrismaClient().analysis.count({
         where: { userId },
       }),
     ]);
@@ -218,7 +218,7 @@ export class AnalysisService {
   }
 
   async deleteAnalysis(analysisId: string, userId: string) {
-    const analysis = await prisma.analysis.findFirst({
+    const analysis = await getPrismaClient().analysis.findFirst({
       where: {
         id: analysisId,
         userId,
@@ -240,7 +240,7 @@ export class AnalysisService {
       }
     }
 
-    await prisma.analysis.delete({
+    await getPrismaClient().analysis.delete({
       where: { id: analysisId },
     });
 
@@ -290,16 +290,16 @@ export class AnalysisService {
 
     // Buscar análises do usuário na fila
     const [waiting, active, completed, failed] = await Promise.all([
-      prisma.analysis.count({
+      getPrismaClient().analysis.count({
         where: { userId, status: "PENDING" },
       }),
-      prisma.analysis.count({
+      getPrismaClient().analysis.count({
         where: { userId, status: "PROCESSING" },
       }),
-      prisma.analysis.count({
+      getPrismaClient().analysis.count({
         where: { userId, status: "COMPLETED" },
       }),
-      prisma.analysis.count({
+      getPrismaClient().analysis.count({
         where: { userId, status: "FAILED" },
       }),
     ]);
@@ -328,15 +328,17 @@ export class AnalysisService {
     }
 
     const [total, completed, failed, pending] = await Promise.all([
-      prisma.analysis.count({ where: { userId } }),
-      prisma.analysis.count({ where: { userId, status: "COMPLETED" } }),
-      prisma.analysis.count({ where: { userId, status: "FAILED" } }),
-      prisma.analysis.count({
+      getPrismaClient().analysis.count({ where: { userId } }),
+      getPrismaClient().analysis.count({
+        where: { userId, status: "COMPLETED" },
+      }),
+      getPrismaClient().analysis.count({ where: { userId, status: "FAILED" } }),
+      getPrismaClient().analysis.count({
         where: { userId, status: { in: ["PENDING", "PROCESSING"] } },
       }),
     ]);
 
-    const avgProcessingTime = await prisma.analysis.aggregate({
+    const avgProcessingTime = await getPrismaClient().analysis.aggregate({
       where: {
         userId,
         status: "COMPLETED",
