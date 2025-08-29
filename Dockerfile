@@ -48,7 +48,10 @@ COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
 COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=nodejs:nodejs /app/package*.json ./
 COPY --from=builder --chown=nodejs:nodejs /app/prisma ./prisma
-COPY --from=builder --chown=nodejs:nodejs /app/start-optimized.js ./
+COPY --from=builder --chown=nodejs:nodejs /app/entrypoint.sh ./
+
+# Tornar entrypoint executável
+RUN chmod +x entrypoint.sh
 
 # Configurações de segurança
 RUN chown -R nodejs:nodejs /app
@@ -71,5 +74,5 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 # Usar dumb-init para gerenciar processos
 ENTRYPOINT ["dumb-init", "--"]
 
-# Comando de inicialização otimizado
-CMD ["node", "start-optimized.js"]
+# Usar entrypoint para configurar variáveis de ambiente
+CMD ["./entrypoint.sh"]
