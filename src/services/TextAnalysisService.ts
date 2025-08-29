@@ -67,7 +67,7 @@ export class TextAnalysisService {
     // 🔴 Textos muito grandes: rejeitados
     if (textSize > this.QUEUE_LIMIT) {
       throw new Error(
-        `Texto muito longo. Máximo permitido: ${this.QUEUE_LIMIT / 1000}KB`
+        `Sentimos muito mas o texto inserido é muito longo. Máximo permitido: ${this.QUEUE_LIMIT / 1000}KB`
       );
     }
 
