@@ -9,10 +9,10 @@ import { errorHandler } from "./middlewares/errorHandler";
 import { requestLogger } from "./middlewares/requestLogger";
 import { Logger } from "./utils/logger";
 import authRoutes from "./routes/auth";
-import analysisRoutes from "./routes/analysis";
+import documentRoutes from "./routes/documents";
 
-// Importar worker (isso iniciará o processamento)
-import "./workers/textAnalysisWorker";
+// Importar workers (isso iniciará o processamento)
+import "./workers/documentProcessingWorker";
 
 if (process.env.NODE_ENV !== "production") {
   dotenv.config();
@@ -72,7 +72,7 @@ app.use(
 
 // Rotas
 app.use("/api/auth", authRoutes);
-app.use("/api/analyze", analysisRoutes);
+app.use("/api/documents", documentRoutes);
 
 // Health check otimizado
 app.get("/health", (req, res) => {
@@ -139,7 +139,7 @@ async function startServer() {
     app.listen(PORT, () => {
       Logger.success(`🚀 Servidor rodando na porta ${PORT}`);
       Logger.info(`📖 Health check: http://localhost:${PORT}/health`);
-      Logger.info(`🔍 Análise: http://localhost:${PORT}/api/analyze`);
+      Logger.info(`📄 Documentos: http://localhost:${PORT}/api/documents`);
     });
 
     // ✅ CONECTAR AO BANCO EM BACKGROUND (não bloquear startup)

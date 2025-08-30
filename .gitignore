@@ -68,3 +68,7 @@ Thumbs.db
 
 # Redis dump
 dump.rdb
+
+# Upload directories
+uploads/temp/*
+uploads/processed/*

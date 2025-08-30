@@ -15,29 +15,29 @@ const getRedisConfig = () => {
   }
 };
 
-// Configuração da fila para análise de texto com otimizações
-export const textAnalysisQueue = new Bull("text analysis", {
+// Configuração da fila para processamento de documentos com otimizações
+export const documentProcessingQueue = new Bull("document processing", {
   redis: getRedisConfig(),
   defaultJobOptions: {
-    removeOnComplete: 20, // Reduzir para apenas os últimos 20 jobs completos
-    removeOnFail: 10, // Reduzir para apenas os últimos 10 jobs falhados
+    removeOnComplete: 15, // Reduzir para apenas os últimos 15 jobs completos
+    removeOnFail: 8, // Reduzir para apenas os últimos 8 jobs falhados
     attempts: 2, // Reduzir tentativas para 2
     backoff: {
       type: "fixed", // Usar backoff fixo em vez de exponencial
-      delay: 5000, // 5 segundos de delay
+      delay: 3000, // 3 segundos de delay
     },
-    delay: 1000, // Delay inicial de 1 segundo
-    timeout: 30000, // Timeout de 30 segundos por job
+    delay: 500, // Delay inicial de 0.5 segundos
+    timeout: 45000, // Timeout de 45 segundos por job (mais tempo para documentos)
   },
   settings: {
-    stalledInterval: 30000, // Verificar jobs travados a cada 30 segundos
+    stalledInterval: 45000, // Verificar jobs travados a cada 45 segundos
     maxStalledCount: 1, // Máximo de 1 tentativa para jobs travados
-    retryProcessDelay: 5000, // Delay de 5 segundos entre tentativas
-    lockDuration: 30000, // Lock de 30 segundos
-    lockRenewTime: 15000, // Renovar lock a cada 15 segundos
+    retryProcessDelay: 3000, // Delay de 3 segundos entre tentativas
+    lockDuration: 45000, // Lock de 45 segundos
+    lockRenewTime: 20000, // Renovar lock a cada 20 segundos
   },
   limiter: {
-    max: 10, // Máximo de 10 jobs por
+    max: 8, // Máximo de 8 jobs por
     duration: 60000, // por minuto
   },
 });
@@ -61,8 +61,8 @@ export const rateLimitQueue = new Bull("rate limit", {
 export const cleanupQueues = async () => {
   try {
     // Limpar jobs antigos das filas
-    await textAnalysisQueue.clean(60 * 60 * 1000, "completed"); // 1 hora
-    await textAnalysisQueue.clean(60 * 60 * 1000, "failed"); // 1 hora
+    await documentProcessingQueue.clean(60 * 60 * 1000, "completed"); // 1 hora
+    await documentProcessingQueue.clean(60 * 60 * 1000, "failed"); // 1 hora
     await rateLimitQueue.clean(30 * 60 * 1000, "completed"); // 30 minutos
     await rateLimitQueue.clean(30 * 60 * 1000, "failed"); // 30 minutos
 

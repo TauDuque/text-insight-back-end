@@ -1,7 +1,7 @@
 export const APP_CONSTANTS = {
   // Configurações da aplicação
-  APP_NAME: "Text Insight API",
-  APP_VERSION: "1.0.0",
+  APP_NAME: "Document Processing API",
+  APP_VERSION: "2.0.0",
 
   // Configurações de segurança
   JWT_EXPIRES_IN: "24h",

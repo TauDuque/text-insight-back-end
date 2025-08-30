@@ -52,25 +52,6 @@ export const handleValidationErrors = (
   next();
 };
 
-// Validações para análise de texto
-export const validateTextAnalysis = [
-  body("text")
-    .isString()
-    .withMessage("validation.text.string")
-    .isLength({ min: 1, max: 50000 })
-    .withMessage("validation.text.length")
-    .trim()
-    .notEmpty()
-    .withMessage("validation.text.empty"),
-  handleValidationErrors,
-];
-
-// Validações para consulta de análise
-export const validateAnalysisId = [
-  param("analysisId").isUUID().withMessage("validation.analysisId.uuid"),
-  handleValidationErrors,
-];
-
 // Validações para paginação
 export const validatePagination = [
   query("page")

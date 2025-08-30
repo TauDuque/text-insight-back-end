@@ -1,6 +1,6 @@
-# Text Insight API - Backend
+# Document Processing API - Backend
 
-Backend da aplicação Text Insight, construído com Node.js, Express, TypeScript e Prisma.
+Backend da aplicação de processamento de documentos, construído com Node.js, Express, TypeScript e Prisma.
 
 ## 🚀 Tecnologias
 
@@ -138,6 +138,7 @@ O projeto usa PostgreSQL com Prisma como ORM. Os principais modelos são:
 
 - **User** - Usuários da aplicação
 - **ApiKey** - Chaves de API dos usuários
+- **Document** - Documentos processados pelos usuários
 
 ## 🧪 Testes
 

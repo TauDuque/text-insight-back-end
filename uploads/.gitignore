@@ -1,0 +1,7 @@
+# Ignorar todos os arquivos nas pastas de upload
+temp/*
+processed/*
+
+# Manter as pastas vazias
+!temp/.gitkeep
+!processed/.gitkeep

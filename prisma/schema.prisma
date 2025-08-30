@@ -23,7 +23,7 @@ model User {
 
   // Relacionamentos
   apiKeys   ApiKey[]
-  analyses  Analysis[]
+  documents Document[]
 
   @@map("users")
 }
@@ -42,25 +42,33 @@ model ApiKey {
   @@map("api_keys")
 }
 
-model Analysis {
-  id          String        @id @default(uuid())
-  jobId       String?       @unique @map("job_id")
-  text        String
-  status      AnalysisStatus @default(PENDING)
-  results     Json?
-  error       String?
-  processingTime Int?       @map("processing_time") // em millisegundos
-  createdAt   DateTime      @default(now()) @map("created_at")
-  completedAt DateTime?     @map("completed_at")
-  userId      String        @map("user_id")
+
+
+model Document {
+  id                String           @id @default(uuid())
+  jobId             String?          @unique @map("job_id")
+  originalName      String           @map("original_name")
+  filename          String
+  filePath          String?          @map("file_path")
+  processedFilePath String?          @map("processed_file_path")
+  size              Int
+  mimeType          String           @map("mime_type")
+  type              String           // image, pdf, text, document
+  status            DocumentStatus   @default(PENDING)
+  results           Json?
+  error             String?
+  processingTime    Int?             @map("processing_time") // em millisegundos
+  createdAt         DateTime         @default(now()) @map("created_at")
+  completedAt       DateTime?        @map("completed_at")
+  userId            String           @map("user_id")
 
   // Relacionamentos
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@map("analyses")
+  @@map("documents")
 }
 
-enum AnalysisStatus {
+enum DocumentStatus {
   PENDING
   PROCESSING
   COMPLETED

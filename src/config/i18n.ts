@@ -9,14 +9,14 @@ export interface Translations {
 export const translations: Translations = {
   // Títulos e cabeçalhos
   "app.title": {
-    pt: "TextInsight API",
-    es: "TextInsight API",
-    en: "TextInsight API",
+    pt: "DocumentInsight API",
+    es: "DocumentInsight API",
+    en: "DocumentInsight API",
   },
   "app.subtitle": {
-    pt: "Análise Inteligente de Texto",
-    es: "Análisis Inteligente de Texto",
-    en: "Intelligent Text Analysis",
+    pt: "Processamento Inteligente de Documentos",
+    es: "Procesamiento Inteligente de Documentos",
+    en: "Intelligent Document Processing",
   },
 
   // Navegação
@@ -25,21 +25,7 @@ export const translations: Translations = {
     es: "Panel de Control",
     en: "Dashboard",
   },
-  "nav.analysis": {
-    pt: "Análise",
-    es: "Análisis",
-    en: "Analysis",
-  },
-  "nav.history": {
-    pt: "Histórico",
-    es: "Historial",
-    en: "History",
-  },
-  "nav.stats": {
-    pt: "Estatísticas",
-    es: "Estadísticas",
-    en: "Statistics",
-  },
+
   "nav.apiKeys": {
     pt: "Chaves API",
     es: "Claves API",
@@ -165,80 +151,6 @@ export const translations: Translations = {
     en: "Invalid data. Check the fields below:",
   },
 
-  // Análise de texto
-  "analysis.title": {
-    pt: "Analisar Texto",
-    es: "Analizar Texto",
-    en: "Analyze Text",
-  },
-  "analysis.placeholder": {
-    pt: "Digite ou cole o texto que deseja analisar...",
-    es: "Escriba o pegue el texto que desea analizar...",
-    en: "Type or paste the text you want to analyze...",
-  },
-  "analysis.submit": {
-    pt: "Analisar",
-    es: "Analizar",
-    en: "Analyze",
-  },
-  "analysis.processing": {
-    pt: "Processando...",
-    es: "Procesando...",
-    en: "Processing...",
-  },
-  "analysis.details": {
-    pt: "Detalhes da Análise",
-    es: "Detalles del Análisis",
-    en: "Analysis Details",
-  },
-  "analysis.back": {
-    pt: "Voltar à Análise",
-    es: "Volver al Análisis",
-    en: "Back to Analysis",
-  },
-  "analysis.createdAt": {
-    pt: "Criada em",
-    es: "Creada en",
-    en: "Created at",
-  },
-  "analysis.results": {
-    pt: "Resultados da Análise",
-    es: "Resultados del Análisis",
-    en: "Analysis Results",
-  },
-  "analysis.status": {
-    pt: "Status",
-    es: "Estado",
-    en: "Status",
-  },
-  "analysis.error": {
-    pt: "Erro",
-    es: "Error",
-    en: "Error",
-  },
-  "analysis.notFound": {
-    pt: "Análise não encontrada",
-    es: "Análisis no encontrado",
-    en: "Analysis not found",
-  },
-
-  // Resultados da análise
-  "results.basic.title": {
-    pt: "Análise Básica",
-    es: "Análisis Básico",
-    en: "Basic Analysis",
-  },
-  "results.linguistic.title": {
-    pt: "Análise Linguística",
-    es: "Análisis Lingüístico",
-    en: "Linguistic Analysis",
-  },
-  "results.advanced.title": {
-    pt: "Análise Avançada",
-    es: "Análisis Avanzado",
-    en: "Advanced Analysis",
-  },
-
   // Métricas
   "metrics.characters": {
     pt: "Caracteres",
@@ -259,33 +171,6 @@ export const translations: Translations = {
     pt: "Parágrafos",
     es: "Párrafos",
     en: "Paragraphs",
-  },
-  "metrics.sentiment": {
-    pt: "Sentimento",
-    es: "Sentimiento",
-    en: "Sentiment",
-  },
-  "metrics.readability": {
-    pt: "Legibilidade",
-    es: "Legibilidad",
-    en: "Readability",
-  },
-
-  // Sentimentos
-  "sentiment.positive": {
-    pt: "Positivo",
-    es: "Positivo",
-    en: "Positive",
-  },
-  "sentiment.negative": {
-    pt: "Negativo",
-    es: "Negativo",
-    en: "Negative",
-  },
-  "sentiment.neutral": {
-    pt: "Neutro",
-    es: "Neutral",
-    en: "Neutral",
   },
 
   // Dificuldade de leitura
@@ -454,26 +339,7 @@ export const translations: Translations = {
     es: "Bienvenido",
     en: "Welcome",
   },
-  "dashboard.totalAnalyses": {
-    pt: "Total de Análises",
-    es: "Total de Análisis",
-    en: "Total Analyses",
-  },
-  "dashboard.completed": {
-    pt: "Concluídas",
-    es: "Completadas",
-    en: "Completed",
-  },
-  "dashboard.inProgress": {
-    pt: "Em Andamento",
-    es: "En Progreso",
-    en: "In Progress",
-  },
-  "dashboard.failed": {
-    pt: "Falharam",
-    es: "Fallaron",
-    en: "Failed",
-  },
+
   "stats.overview": {
     pt: "Visão Geral",
     es: "Vista General",
