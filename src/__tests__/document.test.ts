@@ -1,15 +1,15 @@
-// backend/src/__tests__/analysis.test.ts
+// backend/src/__tests__/document.test.ts
 import request from "supertest";
 import { app } from "../app";
 import { getPrismaClient } from "../config/database";
 
-let testUser: any;
+let testUser: { id: string; name: string; email: string };
 let testApiKey: string;
 
 // Limpa o banco de dados antes de cada teste
 beforeEach(async () => {
   const prisma = getPrismaClient();
-  await prisma.analysis.deleteMany();
+  await prisma.document.deleteMany();
   await prisma.apiKey.deleteMany();
   await prisma.user.deleteMany();
 
@@ -40,28 +40,37 @@ afterAll(async () => {
   await prisma.$disconnect();
 });
 
-describe("Analysis Routes", () => {
-  describe("POST /api/analyze", () => {
+describe("Document Routes", () => {
+  describe("POST /api/documents/upload", () => {
     it("should return 401 without API key", async () => {
-      const textData = {
-        text: "Texto sem API key.",
-      };
-
-      const response = await request(app).post("/api/analyze").send(textData);
+      const response = await request(app).post("/api/documents/upload");
 
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
     });
 
-    it("should analyze text successfully with API key", async () => {
-      const textData = {
-        text: "Este é um texto de teste para análise.",
-      };
-
+    it("should return 400 for missing file", async () => {
       const response = await request(app)
-        .post("/api/analyze")
-        .set("X-API-Key", testApiKey)
-        .send(textData);
+        .post("/api/documents/upload")
+        .set("X-API-Key", testApiKey);
+
+      expect(response.status).toBe(400);
+      expect(response.body.success).toBe(false);
+    });
+  });
+
+  describe("GET /api/documents", () => {
+    it("should return 401 without API key", async () => {
+      const response = await request(app).get("/api/documents");
+
+      expect(response.status).toBe(401);
+      expect(response.body.success).toBe(false);
+    });
+
+    it("should return user documents with valid API key", async () => {
+      const response = await request(app)
+        .get("/api/documents")
+        .set("X-API-Key", testApiKey);
 
       // Por enquanto, vamos apenas verificar que não é 500 (erro interno)
       expect(response.status).not.toBe(500);
@@ -69,21 +78,8 @@ describe("Analysis Routes", () => {
       // Se for 200, verificar a estrutura básica
       if (response.status === 200) {
         expect(response.body.success).toBe(true);
-        expect(response.body.data).toHaveProperty("status");
+        expect(response.body.data).toHaveProperty("documents");
       }
-    });
-  });
-
-  describe("GET /api/analyze/stats/user", () => {
-    it("should return user stats with valid JWT token", async () => {
-      // Para este teste, vamos usar a API Key em vez de JWT
-      const response = await request(app)
-        .get("/api/analyze/stats/user")
-        .set("X-API-Key", testApiKey);
-
-      // Esta rota requer JWT token, não API Key, então deve retornar 401
-      expect(response.status).toBe(401);
-      expect(response.body.success).toBe(false);
     });
   });
 });

@@ -1,9 +1,12 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
-import { AuthService } from "../services/AuthService";
 
 interface AuthRequest extends Request {
-  user?: any;
+  user?: {
+    id: string;
+    email: string;
+    name: string;
+  };
 }
 
 export const authenticateToken = (
@@ -37,37 +40,4 @@ export const authenticateToken = (
   );
 };
 
-export const authenticateApiKey = async (
-  req: AuthRequest,
-  res: Response,
-  next: NextFunction
-) => {
-  const apiKey = req.headers["x-api-key"] as string;
-
-  if (!apiKey) {
-    return res.status(401).json({
-      success: false,
-      message: "API Key requerida",
-    });
-  }
-
-  try {
-    const authService = new AuthService();
-    const validApiKey = await authService.validateApiKey(apiKey);
-
-    if (!validApiKey) {
-      return res.status(401).json({
-        success: false,
-        message: "API Key inválida",
-      });
-    }
-
-    req.user = validApiKey.user;
-    next();
-  } catch {
-    res.status(500).json({
-      success: false,
-      message: "Erro interno do servidor",
-    });
-  }
-};
+// API Key removida - aplicação agora usa apenas JWT para autenticação de usuários

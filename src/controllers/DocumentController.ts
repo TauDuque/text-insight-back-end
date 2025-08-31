@@ -5,13 +5,21 @@ import { documentProcessingQueue } from "../config/queue";
 import { DocumentProcessor } from "../utils/documentProcessor";
 import { UPLOAD_CONFIG } from "../config/upload";
 
+interface AuthRequest extends Request {
+  user?: {
+    id: string;
+    email: string;
+    name: string;
+  };
+}
+
 const documentProcessingService = new DocumentProcessingService();
 
 export class DocumentController {
   /**
    * Upload de documento para processamento
    */
-  static async uploadDocument(req: Request, res: Response) {
+  static async uploadDocument(req: AuthRequest, res: Response) {
     try {
       if (!req.file) {
         return res.status(400).json({
@@ -20,7 +28,7 @@ export class DocumentController {
         });
       }
 
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id;
       if (!userId) {
         return res.status(401).json({
           success: false,
@@ -28,7 +36,13 @@ export class DocumentController {
         });
       }
 
-      const { originalname, filename, path: filePath, mimetype, size } = req.file;
+      const {
+        originalname,
+        filename,
+        path: filePath,
+        mimetype,
+        size,
+      } = req.file;
 
       // Validar tamanho do arquivo
       if (size > UPLOAD_CONFIG.MAX_FILE_SIZE) {
@@ -108,10 +122,10 @@ export class DocumentController {
   /**
    * Obter status de um documento
    */
-  static async getDocumentStatus(req: Request, res: Response) {
+  static async getDocumentStatus(req: AuthRequest, res: Response) {
     try {
       const { documentId } = req.params;
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id;
 
       if (!userId) {
         return res.status(401).json({
@@ -150,9 +164,9 @@ export class DocumentController {
   /**
    * Listar documentos do usuário
    */
-  static async getUserDocuments(req: Request, res: Response) {
+  static async getUserDocuments(req: AuthRequest, res: Response) {
     try {
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id;
       const { page = 1, limit = 10, status } = req.query;
 
       if (!userId) {
@@ -203,10 +217,10 @@ export class DocumentController {
   /**
    * Download de documento processado
    */
-  static async downloadDocument(req: Request, res: Response) {
+  static async downloadDocument(req: AuthRequest, res: Response) {
     try {
       const { documentId } = req.params;
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id;
 
       if (!userId) {
         return res.status(401).json({

@@ -1,8 +1,7 @@
 import { Request, Response, NextFunction } from "express";
-import { getPrismaClient } from "../config/database";
 
 interface AuthRequest extends Request {
-  user?: any;
+  user?: { id: string; email: string; name: string };
 }
 
 // Log de requisições de API
@@ -35,7 +34,7 @@ export const logApiRequest = async (
       );
 
       // Salvar no banco apenas para endpoints críticos
-      if (req.originalUrl.includes("/analyze") && req.method === "POST") {
+      if (req.originalUrl.includes("/documents") && req.method === "POST") {
         // Aqui você pode salvar logs específicos no banco se necessário
       }
     });

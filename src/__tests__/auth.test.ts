@@ -6,7 +6,7 @@ import { getPrismaClient } from "../config/database";
 // Limpa o banco de dados antes de cada teste para garantir isolamento
 beforeEach(async () => {
   const prisma = getPrismaClient();
-  await prisma.analysis.deleteMany();
+  await prisma.document.deleteMany();
   await prisma.apiKey.deleteMany();
   await prisma.user.deleteMany();
 });

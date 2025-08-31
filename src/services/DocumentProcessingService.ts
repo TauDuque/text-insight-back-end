@@ -37,7 +37,7 @@ export class DocumentProcessingService {
     filePath: string,
     originalName: string,
     mimeType: string,
-    userId: string
+    _userId: string
   ): Promise<QueueResponse> {
     const fileSize = this.getFileSize(filePath);
 
@@ -83,7 +83,6 @@ export class DocumentProcessingService {
    * Obtém estatísticas da fila de documentos
    */
   async getQueueStats() {
-    // Esta função será implementada pelo AnalysisService
     // Retorna estatísticas da fila de documentos
     return {
       totalJobs: 0,

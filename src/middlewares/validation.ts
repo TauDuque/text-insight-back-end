@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { body, param, query, validationResult } from "express-validator";
+import { body, query, validationResult } from "express-validator";
 import { getTranslation, Language } from "../config/i18n";
 
 // Middleware para processar resultados de validação
