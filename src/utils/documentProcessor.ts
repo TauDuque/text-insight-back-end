@@ -3,19 +3,28 @@ import { UPLOAD_LIMITS } from "../config/limits";
 import fs from "fs";
 import { getPrismaClient } from "../config/database";
 import pdf from "pdf-parse";
+import { ProcessedDocument } from "../types/document";
 
 export class DocumentProcessor {
   static async processDocument(
     filePath: string,
     originalName: string,
     mimeType: string
-  ): Promise<any> {
+  ): Promise<ProcessedDocument> {
     try {
       // Verificar tipo de arquivo
-      if (UPLOAD_LIMITS.allowedImageTypes.includes(mimeType)) {
+      if (
+        UPLOAD_LIMITS.allowedImageTypes.includes(
+          mimeType as "image/jpeg" | "image/png" | "image/gif"
+        )
+      ) {
         return await this.processImage(filePath);
-      } else if (UPLOAD_LIMITS.allowedDocTypes.includes(mimeType)) {
-        return await this.processDocument(filePath);
+      } else if (
+        UPLOAD_LIMITS.allowedDocTypes.includes(
+          mimeType as "application/pdf" | "text/plain"
+        )
+      ) {
+        return await this.processText(filePath);
       } else {
         throw new Error("Tipo de arquivo não suportado");
       }
@@ -25,7 +34,9 @@ export class DocumentProcessor {
     }
   }
 
-  private static async processImage(filePath: string): Promise<any> {
+  private static async processImage(
+    filePath: string
+  ): Promise<ProcessedDocument> {
     const processed = await sharp(filePath)
       .resize(
         UPLOAD_LIMITS.maxImageDimension,
@@ -56,7 +67,9 @@ export class DocumentProcessor {
     };
   }
 
-  private static async processDocument(filePath: string): Promise<any> {
+  private static async processText(
+    filePath: string
+  ): Promise<ProcessedDocument> {
     const buffer = await fs.promises.readFile(filePath);
     let text = "";
 

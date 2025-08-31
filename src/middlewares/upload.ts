@@ -1,5 +1,5 @@
 import multer from "multer";
-import { Request } from "express";
+import { Request, Response, NextFunction } from "express";
 import path from "path";
 import { UPLOAD_LIMITS, ERROR_MESSAGES } from "../config/limits";
 
@@ -26,7 +26,7 @@ const fileFilter = (
     ...UPLOAD_LIMITS.allowedDocTypes,
   ];
 
-  if (!allowedTypes.includes(file.mimetype)) {
+  if (!allowedTypes.includes(file.mimetype as any)) {
     cb(new Error(ERROR_MESSAGES.INVALID_FILE_TYPE));
     return;
   }
@@ -46,10 +46,10 @@ export const upload = multer({
 
 // Handler de erros do upload
 export const uploadErrorHandler = (
-  err: any,
+  err: Error | multer.MulterError,
   req: Request,
-  res: any,
-  next: any
+  res: Response,
+  next: NextFunction
 ) => {
   if (err instanceof multer.MulterError) {
     if (err.code === "LIMIT_FILE_SIZE") {

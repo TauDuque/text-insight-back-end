@@ -1,0 +1,16 @@
+export interface ProcessedDocument {
+  processedPath: string;
+  size: number;
+  width?: number;
+  height?: number;
+  format?: string;
+  textContent?: string;
+}
+
+export interface DocumentMetadata {
+  width?: number;
+  height?: number;
+  format?: string;
+  pageCount?: number;
+  textContent?: string;
+}
