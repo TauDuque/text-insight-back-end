@@ -25,4 +25,7 @@ router.get("/", DocumentController.getUserDocuments);
 // Download de documento processado
 router.get("/:documentId/download", DocumentController.downloadDocument);
 
+// Buscar documento por jobId
+router.get("/job/:jobId", DocumentController.getDocumentByJobId);
+
 export default router;

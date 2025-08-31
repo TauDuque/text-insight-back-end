@@ -36,6 +36,15 @@ export class DocumentController {
         });
       }
 
+      // Verificar quota do usuário
+      const hasQuota = await DocumentProcessor.checkUserQuota(userId);
+      if (!hasQuota) {
+        return res.status(400).json({
+          success: false,
+          message: ERROR_MESSAGES.USER_QUOTA_EXCEEDED,
+        });
+      }
+
       const {
         originalname,
         filename,
@@ -177,7 +186,7 @@ export class DocumentController {
       }
 
       const skip = (Number(page) - 1) * Number(limit);
-      const where: any = { userId };
+      const where = { userId, ...(status ? { status } : {}) };
 
       if (status) {
         where.status = status;
@@ -217,6 +226,48 @@ export class DocumentController {
   /**
    * Download de documento processado
    */
+  /**
+   * Buscar documento por jobId
+   */
+  static async getDocumentByJobId(req: AuthRequest, res: Response) {
+    try {
+      const { jobId } = req.params;
+      const userId = req.user?.id;
+
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          message: "Usuário não autenticado",
+        });
+      }
+
+      const document = await getPrismaClient().document.findFirst({
+        where: {
+          jobId,
+          userId,
+        },
+      });
+
+      if (!document) {
+        return res.status(404).json({
+          success: false,
+          message: "Documento não encontrado",
+        });
+      }
+
+      res.json({
+        success: true,
+        data: document,
+      });
+    } catch (error) {
+      console.error("Erro ao buscar documento por jobId:", error);
+      res.status(500).json({
+        success: false,
+        message: "Erro interno do servidor",
+      });
+    }
+  }
+
   static async downloadDocument(req: AuthRequest, res: Response) {
     try {
       const { documentId } = req.params;
@@ -251,15 +302,27 @@ export class DocumentController {
         });
       }
 
-      // TODO: Implementar download do arquivo
-      res.json({
-        success: true,
-        message: "Download implementado",
-        data: {
-          filename: document.originalName,
-          path: document.processedFilePath,
-        },
-      });
+      // Enviar o arquivo para download
+      const fs = require("fs");
+
+      // Verificar se o arquivo existe
+      if (!fs.existsSync(document.processedFilePath)) {
+        return res.status(404).json({
+          success: false,
+          message: "Arquivo não encontrado no servidor",
+        });
+      }
+
+      // Configurar headers para download
+      res.setHeader("Content-Type", document.mimeType);
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${encodeURIComponent(document.originalName)}"`
+      );
+
+      // Criar stream de leitura e enviar arquivo
+      const fileStream = fs.createReadStream(document.processedFilePath);
+      fileStream.pipe(res);
     } catch (error) {
       console.error("Erro no download do documento:", error);
       res.status(500).json({

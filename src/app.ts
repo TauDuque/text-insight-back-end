@@ -11,8 +11,9 @@ import { Logger } from "./utils/logger";
 import authRoutes from "./routes/auth";
 import documentRoutes from "./routes/documents";
 
-// Importar workers (isso iniciará o processamento)
+// Importar workers e jobs
 import "./workers/documentProcessingWorker";
+import { startCleanupJob } from "./jobs/cleanup";
 
 if (process.env.NODE_ENV !== "production") {
   dotenv.config();
@@ -134,6 +135,9 @@ async function startServer() {
   try {
     // ✅ CONEXÃO RETARDADA: Iniciar servidor primeiro, conectar depois
     Logger.info("🚀 Iniciando servidor...");
+
+    // Iniciar job de limpeza
+    startCleanupJob();
 
     // Iniciar servidor primeiro (sem aguardar conexões)
     app.listen(PORT, () => {

@@ -65,19 +65,6 @@ export const validatePagination = [
   handleValidationErrors,
 ];
 
-// Validações para criação de API Key
-export const validateApiKeyCreation = [
-  body("name")
-    .isString()
-    .withMessage("validation.name.string")
-    .isLength({ min: 1, max: 100 })
-    .withMessage("validation.name.length")
-    .trim()
-    .notEmpty()
-    .withMessage("validation.name.empty"),
-  handleValidationErrors,
-];
-
 // Validação de email
 export const validateEmail = (email: string): boolean => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

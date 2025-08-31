@@ -1,32 +1,37 @@
 import multer from "multer";
-import path from "path";
 import { Request } from "express";
-import { UPLOAD_CONFIG, UPLOAD_ERRORS } from "../config/upload";
+import path from "path";
+import { UPLOAD_LIMITS, ERROR_MESSAGES } from "../config/limits";
 
-// Configuração de armazenamento temporário
+// Configuração do storage
 const storage = multer.diskStorage({
-  destination: (req: Request, file: Express.Multer.File, cb) => {
-    cb(null, UPLOAD_CONFIG.TEMP_DIR);
-  },
-  filename: (req: Request, file: Express.Multer.File, cb) => {
-    // Gerar nome único para o arquivo
+  destination: "uploads/temp",
+  filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    const extension = path.extname(file.originalname);
-    cb(null, file.fieldname + "-" + uniqueSuffix + extension);
+    cb(
+      null,
+      file.fieldname + "-" + uniqueSuffix + path.extname(file.originalname)
+    );
   },
 });
 
-// Filtro de tipos de arquivo permitidos
+// Filtro de arquivos
 const fileFilter = (
   req: Request,
   file: Express.Multer.File,
   cb: multer.FileFilterCallback
 ) => {
-  if (UPLOAD_CONFIG.ALLOWED_MIME_TYPES.includes(file.mimetype as any)) {
-    cb(null, true);
-  } else {
-    cb(new Error(UPLOAD_ERRORS.INVALID_FILE_TYPE));
+  const allowedTypes = [
+    ...UPLOAD_LIMITS.allowedImageTypes,
+    ...UPLOAD_LIMITS.allowedDocTypes,
+  ];
+
+  if (!allowedTypes.includes(file.mimetype)) {
+    cb(new Error(ERROR_MESSAGES.INVALID_FILE_TYPE));
+    return;
   }
+
+  cb(null, true);
 };
 
 // Configuração do multer
@@ -34,12 +39,12 @@ export const upload = multer({
   storage,
   fileFilter,
   limits: {
-    fileSize: UPLOAD_CONFIG.MAX_FILE_SIZE,
-    files: UPLOAD_CONFIG.MAX_FILES,
+    fileSize: UPLOAD_LIMITS.maxFileSize,
+    files: 1,
   },
 });
 
-// Middleware para capturar erros de upload
+// Handler de erros do upload
 export const uploadErrorHandler = (
   err: any,
   req: Request,
@@ -50,21 +55,15 @@ export const uploadErrorHandler = (
     if (err.code === "LIMIT_FILE_SIZE") {
       return res.status(400).json({
         success: false,
-        message: UPLOAD_ERRORS.FILE_TOO_LARGE,
-      });
-    }
-    if (err.code === "LIMIT_FILE_COUNT") {
-      return res.status(400).json({
-        success: false,
-        message: UPLOAD_ERRORS.TOO_MANY_FILES,
+        message: ERROR_MESSAGES.FILE_TOO_LARGE,
       });
     }
   }
 
-  if (err.message === UPLOAD_ERRORS.INVALID_FILE_TYPE) {
+  if (err.message === ERROR_MESSAGES.INVALID_FILE_TYPE) {
     return res.status(400).json({
       success: false,
-      message: UPLOAD_ERRORS.INVALID_FILE_TYPE,
+      message: err.message,
     });
   }
 

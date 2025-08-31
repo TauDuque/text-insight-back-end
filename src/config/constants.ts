@@ -24,8 +24,7 @@ export const APP_CONSTANTS = {
     INVALID_CREDENTIALS: "Credenciais inválidas",
     TOKEN_REQUIRED: "Token de acesso requerido",
     INVALID_TOKEN: "Token inválido",
-    API_KEY_REQUIRED: "API Key requerida",
-    INVALID_API_KEY: "API Key inválida",
+
     USER_NOT_FOUND: "Usuário não encontrado",
     INTERNAL_ERROR: "Erro interno do servidor",
   },
@@ -34,7 +33,7 @@ export const APP_CONSTANTS = {
   SUCCESS_MESSAGES: {
     USER_CREATED: "Usuário criado com sucesso",
     LOGIN_SUCCESS: "Login realizado com sucesso",
-    API_KEY_CREATED: "API Key criada com sucesso",
+
     OPERATION_SUCCESS: "Operação realizada com sucesso",
   },
 } as const;
