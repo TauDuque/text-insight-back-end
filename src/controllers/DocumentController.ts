@@ -1,340 +1,242 @@
-import { Request, Response } from "express";
+import { Response } from "express";
 import { getPrismaClient } from "../config/database";
-
-import { documentProcessingQueue } from "../config/queue";
 import { DocumentProcessor } from "../utils/documentProcessor";
-import { UPLOAD_CONFIG } from "../config/upload";
-import { ERROR_MESSAGES } from "../config/limits";
-import { DocumentStatus } from "../types/document";
-
-interface AuthRequest extends Request {
-  user?: {
-    id: string;
-    email: string;
-    name: string;
-  };
-}
+import { AuthRequest } from "../types/auth";
+import { UPLOAD_LIMITS } from "../config/limits";
 
 export class DocumentController {
-  /**
-   * Upload de documento para processamento
-   */
   static async uploadDocument(req: AuthRequest, res: Response) {
     try {
       if (!req.file) {
-        return res.status(400).json({
-          success: false,
-          message: "Nenhum arquivo enviado",
-        });
+        return res.status(400).json({ error: "Nenhum arquivo enviado" });
       }
 
+      const { originalname, mimetype, size, buffer } = req.file;
       const userId = req.user?.id;
+
       if (!userId) {
-        return res.status(401).json({
-          success: false,
-          message: "Usuário não autenticado",
-        });
+        return res.status(401).json({ error: "Usuário não autenticado" });
       }
 
-      // Verificar quota do usuário
-      const hasQuota = await DocumentProcessor.checkUserQuota(userId);
-      if (!hasQuota) {
-        return res.status(400).json({
-          success: false,
-          message: ERROR_MESSAGES.USER_QUOTA_EXCEEDED,
-        });
+      // Validar limites
+      if (size > UPLOAD_LIMITS.maxFileSize) {
+        return res.status(400).json({ error: "Arquivo muito grande" });
       }
 
-      const {
-        originalname,
-        filename,
-        path: filePath,
-        mimetype,
-        size,
-      } = req.file;
-
-      // Validar tamanho do arquivo
-      if (size > UPLOAD_CONFIG.MAX_FILE_SIZE) {
-        // Limpar arquivo temporário
-        DocumentProcessor.cleanupTempFile(filePath);
-        return res.status(400).json({
-          success: false,
-          message: UPLOAD_CONFIG.MAX_FILE_SIZE / (1024 * 1024) + "MB",
-        });
-      }
-
-      // Criar registro no banco
-      const document = await getPrismaClient().document.create({
-        data: {
-          originalName: originalname,
-          filename,
-          filePath,
-          size,
-          mimeType: mimetype,
-          type: DocumentProcessor.getDocumentType(mimetype),
-          status: "PENDING",
-          userId,
-        },
-      });
-
-      // Adicionar à fila de processamento
-      const job = await documentProcessingQueue.add(
-        "process-document",
-        {
-          documentId: document.id,
-          filePath,
-          originalName: originalname,
-          mimeType: mimetype,
-          userId,
-        },
-        {
-          attempts: 2,
-          backoff: {
-            type: "fixed",
-            delay: 3000,
-          },
-        }
+      // Processar o documento
+      const processed = await DocumentProcessor.processDocument(
+        buffer,
+        mimetype
       );
 
-      // Atualizar jobId no banco
-      await getPrismaClient().document.update({
-        where: { id: document.id },
-        data: { jobId: job.id.toString() },
-      });
-
-      // Gerar resposta da fila
-      const queueResponse = {
-        queueId: job.id.toString(),
-        message: "Documento enviado para processamento",
-        estimatedTime: 5, // 5 segundos estimados
-        fileSize: size,
-        filename: originalname,
-      };
-
-      res.status(201).json({
-        success: true,
-        message: "Documento enviado para processamento",
+      // Salvar no banco apenas os dados extraídos
+      const prisma = getPrismaClient();
+      const document = await prisma.document.create({
         data: {
-          documentId: document.id,
-          jobId: job.id,
-          ...queueResponse,
+          userId,
+          originalName: originalname,
+          filename: originalname, // Usar o nome original como filename
+          mimeType: mimetype,
+          type: mimetype.split("/")[0], // Extrair o tipo (image, application, etc.)
+          size: size,
+          extractedText: processed.extractedText,
+          metadata: processed.metadata,
+          processedAt: new Date(),
         },
       });
-    } catch (error) {
-      console.error("Erro no upload de documento:", error);
-      res.status(500).json({
-        success: false,
-        message: "Erro interno do servidor",
+
+      // Retornar apenas metadados
+      res.json({
+        id: document.id,
+        originalName: document.originalName,
+        mimeType: DocumentProcessor.getContentType(mimetype),
+        size: document.size,
+        createdAt: document.createdAt,
       });
+    } catch (error) {
+      console.error("Erro ao processar documento:", error);
+      res.status(500).json({ error: "Erro ao processar documento" });
     }
   }
 
-  /**
-   * Obter status de um documento
-   */
-  static async getDocumentStatus(req: AuthRequest, res: Response) {
+  static async getDocument(req: AuthRequest, res: Response) {
+    const { id } = req.params;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({ error: "Usuário não autenticado" });
+    }
+
     try {
-      const { documentId } = req.params;
-      const userId = req.user?.id;
-
-      if (!userId) {
-        return res.status(401).json({
-          success: false,
-          message: "Usuário não autenticado",
-        });
-      }
-
-      const document = await getPrismaClient().document.findFirst({
-        where: {
-          id: documentId,
-          userId,
-        },
+      const prisma = getPrismaClient();
+      const document = await prisma.document.findFirst({
+        where: { id, userId },
       });
 
       if (!document) {
-        return res.status(404).json({
-          success: false,
-          message: "Documento não encontrado",
+        return res.status(404).json({ error: "Documento não encontrado" });
+      }
+
+      // Para imagens, retornamos apenas os metadados
+      if (document.mimeType.startsWith("image/")) {
+        return res.json({
+          id: document.id,
+          originalName: document.originalName,
+          mimeType: document.mimeType,
+          metadata: document.metadata,
         });
       }
 
+      // Para PDFs e textos, retornamos o texto extraído
+      res.setHeader("Content-Type", "text/plain");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${document.originalName}"`
+      );
+      res.send(document.extractedText || "");
+    } catch (error) {
+      console.error("Erro ao recuperar documento:", error);
+      res.status(500).json({ error: "Erro ao recuperar documento" });
+    }
+  }
+
+  static async getUserDocuments(req: AuthRequest, res: Response) {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({ error: "Usuário não autenticado" });
+    }
+
+    try {
+      const prisma = getPrismaClient();
+      const documents = await prisma.document.findMany({
+        where: { userId },
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          originalName: true,
+          mimeType: true,
+          size: true,
+          createdAt: true,
+          processedAt: true,
+          metadata: true,
+        },
+      });
+
+      res.json(documents);
+    } catch (error) {
+      console.error("Erro ao listar documentos:", error);
+      res.status(500).json({ error: "Erro ao listar documentos" });
+    }
+  }
+
+  static async getDocumentStatus(req: AuthRequest, res: Response) {
+    const { documentId } = req.params;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({ error: "Usuário não autenticado" });
+    }
+
+    try {
+      const prisma = getPrismaClient();
+      const document = await prisma.document.findFirst({
+        where: { id: documentId, userId },
+      });
+
+      if (!document) {
+        return res.status(404).json({ error: "Documento não encontrado" });
+      }
+
       res.json({
-        success: true,
-        data: document,
+        id: document.id,
+        originalName: document.originalName,
+        mimeType: document.mimeType,
+        size: document.size,
+        createdAt: document.createdAt,
+        processedAt: document.processedAt,
       });
     } catch (error) {
       console.error("Erro ao obter status do documento:", error);
-      res.status(500).json({
-        success: false,
-        message: "Erro interno do servidor",
-      });
+      res.status(500).json({ error: "Erro ao obter status do documento" });
     }
   }
 
-  /**
-   * Listar documentos do usuário
-   */
-  static async getUserDocuments(req: AuthRequest, res: Response) {
-    try {
-      const userId = req.user?.id;
-      const {
-        page = 1,
-        limit = 10,
-        status,
-      } = req.query as {
-        page?: string;
-        limit?: string;
-        status?: DocumentStatus;
-      };
-
-      if (!userId) {
-        return res.status(401).json({
-          success: false,
-          message: "Usuário não autenticado",
-        });
-      }
-
-      const skip = (Number(page) - 1) * Number(limit);
-      const where = { userId, ...(status ? { status } : {}) };
-
-      if (status) {
-        where.status = status;
-      }
-
-      const [documents, total] = await Promise.all([
-        getPrismaClient().document.findMany({
-          where,
-          orderBy: { createdAt: "desc" },
-          skip,
-          take: Number(limit),
-        }),
-        getPrismaClient().document.count({ where }),
-      ]);
-
-      res.json({
-        success: true,
-        data: {
-          documents,
-          pagination: {
-            page: Number(page),
-            limit: Number(limit),
-            total,
-            pages: Math.ceil(total / Number(limit)),
-          },
-        },
-      });
-    } catch (error) {
-      console.error("Erro ao listar documentos:", error);
-      res.status(500).json({
-        success: false,
-        message: "Erro interno do servidor",
-      });
-    }
-  }
-
-  /**
-   * Buscar documento por jobId
-   */
   static async getDocumentByJobId(req: AuthRequest, res: Response) {
+    const { jobId } = req.params;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({ error: "Usuário não autenticado" });
+    }
+
     try {
-      const { jobId } = req.params;
-      const userId = req.user?.id;
-
-      if (!userId) {
-        return res.status(401).json({
-          success: false,
-          message: "Usuário não autenticado",
-        });
-      }
-
-      const document = await getPrismaClient().document.findFirst({
+      const prisma = getPrismaClient();
+      const document = await prisma.document.findFirst({
         where: {
-          jobId,
           userId,
+          // Como não temos mais jobId no banco, vamos buscar por ID
+          // ou implementar uma lógica diferente baseada no jobId
+          id: jobId, // Assumindo que jobId é na verdade o ID do documento
         },
       });
 
       if (!document) {
-        return res.status(404).json({
-          success: false,
-          message: "Documento não encontrado",
-        });
+        return res.status(404).json({ error: "Documento não encontrado" });
       }
 
       res.json({
-        success: true,
-        data: document,
+        id: document.id,
+        originalName: document.originalName,
+        mimeType: document.mimeType,
+        size: document.size,
+        createdAt: document.createdAt,
+        processedAt: document.processedAt,
       });
     } catch (error) {
       console.error("Erro ao buscar documento por jobId:", error);
-      res.status(500).json({
-        success: false,
-        message: "Erro interno do servidor",
-      });
+      res.status(500).json({ error: "Erro ao buscar documento" });
     }
   }
 
   static async downloadDocument(req: AuthRequest, res: Response) {
+    const { documentId } = req.params;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({ error: "Usuário não autenticado" });
+    }
+
     try {
-      const { documentId } = req.params;
-      const userId = req.user?.id;
-
-      if (!userId) {
-        return res.status(401).json({
-          success: false,
-          message: "Usuário não autenticado",
-        });
-      }
-
-      const document = await getPrismaClient().document.findFirst({
-        where: {
-          id: documentId,
-          userId,
-          status: "COMPLETED",
-        },
+      const prisma = getPrismaClient();
+      const document = await prisma.document.findFirst({
+        where: { id: documentId, userId },
       });
 
       if (!document) {
-        return res.status(404).json({
-          success: false,
-          message: "Documento não encontrado ou não processado",
+        return res.status(404).json({ error: "Documento não encontrado" });
+      }
+
+      // Para imagens, retornamos apenas os metadados
+      if (document.mimeType.startsWith("image/")) {
+        return res.json({
+          id: document.id,
+          originalName: document.originalName,
+          mimeType: document.mimeType,
+          metadata: document.metadata,
         });
       }
 
-      if (!document.processedFilePath) {
-        return res.status(404).json({
-          success: false,
-          message: "Arquivo processado não encontrado",
-        });
-      }
-
-      // Enviar o arquivo para download
-      const fs = require("fs");
-
-      // Verificar se o arquivo existe
-      if (!fs.existsSync(document.processedFilePath)) {
-        return res.status(404).json({
-          success: false,
-          message: "Arquivo não encontrado no servidor",
-        });
-      }
-
-      // Configurar headers para download
-      res.setHeader("Content-Type", document.mimeType);
+      // Para PDFs e textos, retornamos o texto extraído
+      res.setHeader("Content-Type", "text/plain");
       res.setHeader(
         "Content-Disposition",
-        `attachment; filename="${encodeURIComponent(document.originalName)}"`
+        `attachment; filename="${document.originalName}"`
       );
-
-      // Criar stream de leitura e enviar arquivo
-      const fileStream = fs.createReadStream(document.processedFilePath);
-      fileStream.pipe(res);
+      res.send(document.extractedText || "");
     } catch (error) {
       console.error("Erro no download do documento:", error);
-      res.status(500).json({
-        success: false,
-        message: "Erro interno do servidor",
-      });
+      res.status(500).json({ error: "Erro no download do documento" });
     }
   }
 }

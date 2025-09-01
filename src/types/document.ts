@@ -1,20 +1,20 @@
-export interface ProcessedDocument {
-  processedPath: string;
-  size: number;
-  width?: number;
-  height?: number;
-  format?: string;
-  textContent?: string;
-}
-
 export interface DocumentMetadata {
-  width?: number;
-  height?: number;
-  format?: string;
-  pageCount?: number;
-  textContent?: string;
-  processedPath: string;
+  id: string;
+  userId: string;
+  originalName: string;
+  mimeType: string;
   size: number;
+  createdAt: Date;
+  processedAt?: Date;
 }
 
-export type DocumentStatus = "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
+export interface ProcessedDocument {
+  extractedText: string | null; // Texto extraído de PDFs e arquivos de texto
+  metadata: {
+    width?: number; // Para imagens
+    height?: number; // Para imagens
+    format?: string; // Formato original
+    pageCount?: number; // Para PDFs
+    size: number; // Tamanho original
+  };
+}
