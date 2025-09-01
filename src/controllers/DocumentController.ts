@@ -1,9 +1,11 @@
 import { Request, Response } from "express";
 import { getPrismaClient } from "../config/database";
-import { DocumentProcessingService } from "../services/DocumentProcessingService";
+
 import { documentProcessingQueue } from "../config/queue";
 import { DocumentProcessor } from "../utils/documentProcessor";
 import { UPLOAD_CONFIG } from "../config/upload";
+import { ERROR_MESSAGES } from "../config/limits";
+import { DocumentStatus } from "../types/document";
 
 interface AuthRequest extends Request {
   user?: {
@@ -12,8 +14,6 @@ interface AuthRequest extends Request {
     name: string;
   };
 }
-
-const documentProcessingService = new DocumentProcessingService();
 
 export class DocumentController {
   /**
@@ -102,13 +102,14 @@ export class DocumentController {
         data: { jobId: job.id.toString() },
       });
 
-      // Obter resposta da fila
-      const queueResponse = await documentProcessingService.addDocumentToQueue(
-        filePath,
-        originalname,
-        mimetype,
-        userId
-      );
+      // Gerar resposta da fila
+      const queueResponse = {
+        queueId: job.id.toString(),
+        message: "Documento enviado para processamento",
+        estimatedTime: 5, // 5 segundos estimados
+        fileSize: size,
+        filename: originalname,
+      };
 
       res.status(201).json({
         success: true,
@@ -176,7 +177,15 @@ export class DocumentController {
   static async getUserDocuments(req: AuthRequest, res: Response) {
     try {
       const userId = req.user?.id;
-      const { page = 1, limit = 10, status } = req.query;
+      const {
+        page = 1,
+        limit = 10,
+        status,
+      } = req.query as {
+        page?: string;
+        limit?: string;
+        status?: DocumentStatus;
+      };
 
       if (!userId) {
         return res.status(401).json({
@@ -223,9 +232,6 @@ export class DocumentController {
     }
   }
 
-  /**
-   * Download de documento processado
-   */
   /**
    * Buscar documento por jobId
    */

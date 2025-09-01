@@ -154,4 +154,26 @@ export class DocumentProcessor {
     });
     return count < UPLOAD_LIMITS.maxFilesPerUser;
   }
+
+  static getDocumentType(mimeType: string): string {
+    if (UPLOAD_LIMITS.allowedImageTypes.includes(mimeType as any)) {
+      return "IMAGE";
+    }
+    if (mimeType === "application/pdf") {
+      return "PDF";
+    }
+    if (mimeType === "text/plain") {
+      return "TEXT";
+    }
+    return "OTHER";
+  }
+
+  static async moveToProcessed(
+    tempPath: string,
+    _filename: string
+  ): Promise<string> {
+    const processedPath = tempPath.replace("temp", "processed");
+    await fs.promises.rename(tempPath, processedPath);
+    return processedPath;
+  }
 }

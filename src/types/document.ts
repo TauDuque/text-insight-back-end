@@ -13,4 +13,8 @@ export interface DocumentMetadata {
   format?: string;
   pageCount?: number;
   textContent?: string;
+  processedPath: string;
+  size: number;
 }
+
+export type DocumentStatus = "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";

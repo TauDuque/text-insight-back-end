@@ -133,42 +133,32 @@ const cleanupConnections = async () => {
 
 async function startServer() {
   try {
-    // ✅ CONEXÃO RETARDADA: Iniciar servidor primeiro, conectar depois
     Logger.info("🚀 Iniciando servidor...");
 
-    // Iniciar job de limpeza
-    startCleanupJob();
+    try {
+      // Conectar ao banco de dados
+      Logger.info("🗄️ Conectando ao banco de dados...");
+      await connectDatabase();
+      Logger.info("✅ Banco de dados conectado com sucesso");
 
-    // Iniciar servidor primeiro (sem aguardar conexões)
-    app.listen(PORT, () => {
-      Logger.success(`🚀 Servidor rodando na porta ${PORT}`);
-      Logger.info(`📖 Health check: http://localhost:${PORT}/health`);
-      Logger.info(`📄 Documentos: http://localhost:${PORT}/api/documents`);
-    });
+      // Conectar ao Redis
+      Logger.info("🔴 Conectando ao Redis...");
+      await connectRedis();
+      Logger.info("✅ Redis conectado com sucesso");
 
-    // ✅ CONECTAR AO BANCO EM BACKGROUND (não bloquear startup)
-    setImmediate(async () => {
-      try {
-        Logger.info("🗄️ Conectando ao banco de dados...");
-        await connectDatabase();
-        Logger.info("✅ Banco de dados conectado com sucesso");
-      } catch (error) {
-        Logger.error("❌ Erro ao conectar com banco (não crítico):", error);
-        // ✅ NÃO PARAR A APLICAÇÃO - apenas logar o erro
-      }
-    });
+      // Iniciar job de limpeza
+      startCleanupJob();
 
-    // ✅ CONECTAR AO REDIS EM BACKGROUND
-    setImmediate(async () => {
-      try {
-        Logger.info("🔴 Conectando ao Redis...");
-        await connectRedis();
-        Logger.info("✅ Redis conectado com sucesso");
-      } catch (error) {
-        Logger.error("❌ Erro ao conectar com Redis (não crítico):", error);
-        // ✅ NÃO PARAR A APLICAÇÃO - apenas logar o erro
-      }
-    });
+      // Iniciar servidor
+      app.listen(PORT, () => {
+        Logger.success(`🚀 Servidor rodando na porta ${PORT}`);
+        Logger.info(`📖 Health check: http://localhost:${PORT}/health`);
+        Logger.info(`📄 Documentos: http://localhost:${PORT}/api/documents`);
+      });
+    } catch (error) {
+      Logger.error("❌ Erro ao iniciar serviços:", error);
+      process.exit(1);
+    }
 
     // Configurar limpeza automática
     setInterval(cleanupMemory, 15 * 60 * 1000); // A cada 15 minutos

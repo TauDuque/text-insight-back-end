@@ -1,7 +1,5 @@
-import {
-  DocumentProcessor,
-  DocumentMetadata,
-} from "../utils/documentProcessor";
+import { DocumentProcessor } from "../utils/documentProcessor";
+import { DocumentMetadata } from "../types/document";
 import { UPLOAD_CONFIG } from "../config/upload";
 
 export interface DocumentProcessingResult {

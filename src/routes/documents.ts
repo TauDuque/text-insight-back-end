@@ -22,10 +22,10 @@ router.get("/:documentId/status", DocumentController.getDocumentStatus);
 // Listar documentos do usuário
 router.get("/", DocumentController.getUserDocuments);
 
-// Download de documento processado
-router.get("/:documentId/download", DocumentController.downloadDocument);
-
 // Buscar documento por jobId
 router.get("/job/:jobId", DocumentController.getDocumentByJobId);
+
+// Download de documento processado
+router.get("/:documentId/download", DocumentController.downloadDocument);
 
 export default router;
