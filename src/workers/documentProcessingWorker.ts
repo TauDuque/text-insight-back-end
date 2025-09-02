@@ -3,7 +3,7 @@ import { documentProcessingQueue } from "../config/queue";
 import { DocumentProcessingService } from "../services/DocumentProcessingService";
 import { getPrismaClient } from "../config/database";
 import { cacheService } from "../services/CacheService";
-import { DocumentProcessor } from "../utils/documentProcessor";
+// import { DocumentProcessor } from "../utils/documentProcessor"; // Não utilizado mais
 import { UPLOAD_CONFIG } from "../config/upload";
 
 interface DocumentJobData {
@@ -70,9 +70,9 @@ documentProcessingQueue.process(
         data: {
           status: "COMPLETED",
           results: results as any,
-          processedFilePath: processedPath,
-          completedAt: new Date(),
-          processingTime: (results as any).processingTime,
+          processed_file_path: processedPath,
+          completed_at: new Date(),
+          processing_time: (results as any).processingTime,
         },
       });
 
@@ -96,7 +96,7 @@ documentProcessingQueue.process(
       );
 
       // Limpar arquivo temporário em caso de erro
-      DocumentProcessor.cleanupTempFile(filePath);
+      // DocumentProcessor.cleanupTempFile(filePath); // Método não existe mais
 
       // Salvar erro
       await getPrismaClient().document.update({
@@ -104,7 +104,7 @@ documentProcessingQueue.process(
         data: {
           status: "FAILED",
           error: error instanceof Error ? error.message : "Erro desconhecido",
-          completedAt: new Date(),
+          completed_at: new Date(),
         },
       });
 

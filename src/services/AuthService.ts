@@ -74,11 +74,12 @@ export class AuthService {
 
     const key = `tia_${uuidv4().replace(/-/g, "")}`;
 
-    const apiKey = await prisma.apiKey.create({
+    const apiKey = await prisma.api_keys.create({
       data: {
+        id: uuidv4(),
         key,
         name,
-        userId,
+        user_id: userId,
       },
     });
 
@@ -88,13 +89,13 @@ export class AuthService {
   async validateApiKey(key: string) {
     const prisma = getPrismaClient();
 
-    const apiKey = await prisma.apiKey.findUnique({
+    const apiKey = await prisma.api_keys.findUnique({
       where: {
         key,
-        isActive: true,
+        is_active: true,
       },
       include: {
-        user: true,
+        users: true,
       },
     });
 
@@ -104,15 +105,15 @@ export class AuthService {
   async getUserApiKeys(userId: string) {
     const prisma = getPrismaClient();
 
-    return await prisma.apiKey.findMany({
-      where: { userId },
-      orderBy: { createdAt: "desc" },
+    return await prisma.api_keys.findMany({
+      where: { user_id: userId },
+      orderBy: { created_at: "desc" },
       select: {
         id: true,
         key: true,
         name: true,
-        isActive: true,
-        createdAt: true,
+        is_active: true,
+        created_at: true,
       },
     });
   }
@@ -120,10 +121,10 @@ export class AuthService {
   async revokeApiKey(keyId: string, userId: string) {
     const prisma = getPrismaClient();
 
-    const apiKey = await prisma.apiKey.findFirst({
+    const apiKey = await prisma.api_keys.findFirst({
       where: {
         id: keyId,
-        userId,
+        user_id: userId,
       },
     });
 
@@ -131,9 +132,9 @@ export class AuthService {
       throw new Error("API Key não encontrada");
     }
 
-    return await prisma.apiKey.update({
+    return await prisma.api_keys.update({
       where: { id: keyId },
-      data: { isActive: false },
+      data: { is_active: false },
     });
   }
 
