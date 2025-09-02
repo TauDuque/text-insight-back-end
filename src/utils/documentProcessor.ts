@@ -8,6 +8,20 @@ export class DocumentProcessor {
     mimeType: string
   ): Promise<ProcessedDocument> {
     try {
+      console.log("🔍 DEBUG - Processando documento com mimeType:", mimeType);
+      console.log(
+        "🔍 DEBUG - Buffer recebido:",
+        buffer ? `Buffer(${buffer.length} bytes)` : "undefined"
+      );
+
+      if (!buffer || !Buffer.isBuffer(buffer)) {
+        throw new Error("Buffer inválido ou não fornecido");
+      }
+
+      if (!mimeType || typeof mimeType !== "string") {
+        throw new Error("MimeType inválido ou não fornecido");
+      }
+
       if (mimeType.startsWith("image/")) {
         return await this.processImage(buffer);
       } else if (mimeType === "application/pdf") {
@@ -15,10 +29,13 @@ export class DocumentProcessor {
       } else if (mimeType === "text/plain") {
         return await this.processText(buffer);
       }
-      throw new Error("Tipo de arquivo não suportado");
+
+      console.log("⚠️ WARNING - Tipo de arquivo não suportado:", mimeType);
+      throw new Error(`Tipo de arquivo não suportado: ${mimeType}`);
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Erro desconhecido";
+      console.error("❌ ERROR - Erro no processamento:", error);
       throw new Error(`Erro ao processar documento: ${errorMessage}`);
     }
   }

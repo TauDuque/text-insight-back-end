@@ -25,6 +25,11 @@ router.get("/", DocumentController.getUserDocuments);
 // Buscar documento por jobId
 router.get("/job/:jobId", DocumentController.getDocumentByJobId);
 
+// Debug: Verificar status da fila (apenas em desenvolvimento)
+if (process.env.NODE_ENV === "development") {
+  router.get("/debug/queue", DocumentController.getQueueStatus);
+}
+
 // Download de documento processado
 router.get("/:documentId/download", DocumentController.downloadDocument);
 

@@ -1,19 +1,9 @@
 import multer from "multer";
 import { Request, Response, NextFunction } from "express";
-import path from "path";
 import { UPLOAD_LIMITS, ERROR_MESSAGES } from "../config/limits";
 
-// Configuração do storage
-const storage = multer.diskStorage({
-  destination: "uploads/temp",
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(
-      null,
-      file.fieldname + "-" + uniqueSuffix + path.extname(file.originalname)
-    );
-  },
-});
+// Configuração do storage - Usando memoryStorage para processamento em memória
+const storage = multer.memoryStorage();
 
 // Filtro de arquivos
 const fileFilter = (

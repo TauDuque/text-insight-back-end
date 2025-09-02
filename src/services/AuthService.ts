@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from "uuid";
 import { getPrismaClient } from "../config/database";
 
 export class AuthService {
-  async register(email: string, password: string, name: string) {
+  async register(name: string, email: string, password: string) {
     const prisma = getPrismaClient();
 
     // Verificar se o usuário já existe

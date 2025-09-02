@@ -66,13 +66,25 @@ export class DocumentProcessingService {
     mimeType: string
   ): Promise<ProcessedDocument> {
     try {
+      console.log("🔍 DEBUG - Iniciando processamento em fila:", {
+        filePath,
+        originalName,
+        mimeType,
+      });
+
       // Ler o arquivo como buffer
       const fs = require("fs");
       const buffer = fs.readFileSync(filePath);
 
-      return await DocumentProcessor.processDocument(buffer, mimeType);
+      console.log("🔍 DEBUG - Arquivo lido, tamanho:", buffer.length);
+
+      const result = await DocumentProcessor.processDocument(buffer, mimeType);
+
+      console.log("🔍 DEBUG - Processamento concluído:", result);
+
+      return result;
     } catch (error) {
-      console.error("Erro no processamento em fila:", error);
+      console.error("❌ ERROR - Erro no processamento em fila:", error);
       throw new Error("Falha ao processar documento em fila");
     }
   }

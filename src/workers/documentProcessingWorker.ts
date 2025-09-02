@@ -8,7 +8,7 @@ import { UPLOAD_CONFIG } from "../config/upload";
 
 interface DocumentJobData {
   documentId: string;
-  filePath: string;
+  file_path: string;
   originalName: string;
   mimeType: string;
   userId: string;
@@ -25,7 +25,7 @@ documentProcessingQueue.process(
   "process-document",
   BATCH_SIZE,
   async (job: Job<DocumentJobData>) => {
-    const { documentId, filePath, originalName, mimeType, userId } = job.data;
+    const { documentId, file_path, originalName, mimeType, userId } = job.data;
 
     try {
       console.log(
@@ -44,7 +44,7 @@ documentProcessingQueue.process(
       // Realizar processamento com timeout
       const results = await Promise.race([
         documentProcessingService.processQueuedDocument(
-          filePath,
+          file_path,
           originalName,
           mimeType
         ),
@@ -56,23 +56,48 @@ documentProcessingQueue.process(
         ),
       ]);
 
+      console.log("🔍 DEBUG - Resultados do processamento:", results);
+
       job.progress(75);
 
-      // Mover arquivo para pasta processada
-      const processedPath = await documentProcessingService.moveToProcessed(
-        filePath,
-        (results as any).filename
-      );
+      // Mover arquivo para pasta processada (simulado)
+      const processedPath = file_path; // Por enquanto, manter no mesmo local
 
-      // Salvar resultados
+      // Obter tamanho do arquivo
+      const fs = require("fs");
+      const fileSize = fs.statSync(file_path).size;
+
+      // Salvar resultados processados
+      const processedResults = results as any;
       await getPrismaClient().document.update({
         where: { id: documentId },
         data: {
           status: "COMPLETED",
-          results: results as any,
+          results: {
+            filename: originalName,
+            originalName: originalName,
+            size: fileSize,
+            type: mimeType.split("/")[0],
+            mimeType: mimeType,
+            dimensions:
+              processedResults.metadata.width &&
+              processedResults.metadata.height
+                ? {
+                    width: processedResults.metadata.width,
+                    height: processedResults.metadata.height,
+                  }
+                : undefined,
+            pageCount: processedResults.metadata.pageCount,
+            textContent: processedResults.extractedText,
+            processingTime: Date.now() - job.timestamp,
+            status: "completed",
+          },
           processed_file_path: processedPath,
           completed_at: new Date(),
-          processing_time: (results as any).processingTime,
+          processing_time: Date.now() - job.timestamp,
+          extractedText: processedResults.extractedText,
+          metadata: processedResults.metadata,
+          processedAt: new Date(),
         },
       });
 
