@@ -15,29 +15,29 @@ const getRedisConfig = () => {
   }
 };
 
-// Configuração da fila para processamento de documentos com otimizações
+// Configuração da fila para processamento de documentos com otimizações CRÍTICAS
 export const documentProcessingQueue = new Bull("document processing", {
   redis: getRedisConfig(),
   defaultJobOptions: {
-    removeOnComplete: 15, // Reduzir para apenas os últimos 15 jobs completos
-    removeOnFail: 8, // Reduzir para apenas os últimos 8 jobs falhados
-    attempts: 2, // Reduzir tentativas para 2
+    removeOnComplete: 5, // Reduzido para apenas os últimos 5 jobs completos
+    removeOnFail: 3, // Reduzido para apenas os últimos 3 jobs falhados
+    attempts: 1, // Reduzido para apenas 1 tentativa
     backoff: {
-      type: "fixed", // Usar backoff fixo em vez de exponencial
-      delay: 3000, // 3 segundos de delay
+      type: "fixed",
+      delay: 5000, // 5 segundos de delay
     },
-    delay: 500, // Delay inicial de 0.5 segundos
-    timeout: 45000, // Timeout de 45 segundos por job (mais tempo para documentos)
+    delay: 1000, // Delay inicial de 1 segundo
+    timeout: 30000, // Timeout reduzido para 30 segundos
   },
   settings: {
-    stalledInterval: 45000, // Verificar jobs travados a cada 45 segundos
-    maxStalledCount: 1, // Máximo de 1 tentativa para jobs travados
-    retryProcessDelay: 3000, // Delay de 3 segundos entre tentativas
-    lockDuration: 45000, // Lock de 45 segundos
-    lockRenewTime: 20000, // Renovar lock a cada 20 segundos
+    stalledInterval: 60000, // Verificar jobs travados a cada 1 minuto (reduzido)
+    maxStalledCount: 0, // Não tentar reprocessar jobs travados
+    retryProcessDelay: 5000, // Delay de 5 segundos entre tentativas
+    lockDuration: 30000, // Lock reduzido para 30 segundos
+    lockRenewTime: 15000, // Renovar lock a cada 15 segundos
   },
   limiter: {
-    max: 8, // Máximo de 8 jobs por
+    max: 2, // Reduzido para máximo de 2 jobs por
     duration: 60000, // por minuto
   },
 });
@@ -72,7 +72,7 @@ export const cleanupQueues = async () => {
   }
 };
 
-// Executar limpeza a cada 2 horas
-setInterval(cleanupQueues, 2 * 60 * 60 * 1000);
+// Executar limpeza a cada 4 horas (reduzido)
+setInterval(cleanupQueues, 4 * 60 * 60 * 1000);
 
 export { Bull };

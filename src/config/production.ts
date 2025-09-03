@@ -1,54 +1,88 @@
-// Configurações específicas para produção para reduzir consumo de recursos
-
+// Configurações específicas para produção - otimizações de custo
 export const PRODUCTION_CONFIG = {
-  // Configurações de memória
-  MEMORY: {
-    MAX_HEAP_SIZE: "512m", // Limitar heap a 512MB
-    GC_INTERVAL: 15 * 60 * 1000, // Garbage collection a cada 15 minutos
-    CACHE_CLEANUP_INTERVAL: 30 * 60 * 1000, // Limpeza de cache a cada 30 minutos
+  // Configurações de CPU
+  CPU: {
+    // Reduzir polling de jobs
+    JOB_CHECK_INTERVAL: 60000, // 1 minuto (era 30 segundos)
+
+    // Reduzir limpeza de memória
+    MEMORY_CLEANUP_INTERVAL: 4 * 60 * 60 * 1000, // 4 horas (era 2 horas)
+
+    // Reduzir logs
+    LOG_LEVEL: "error", // Apenas erros em produção
   },
 
-  // Configurações de processamento
-  PROCESSING: {
-    MAX_CONCURRENT_JOBS: 3, // Máximo de 3 jobs simultâneos
-    JOB_TIMEOUT: 30000, // Timeout de 30 segundos por job
-    MAX_TEXT_LENGTH: 50000, // Limite de texto para análise
-    BATCH_SIZE: 5, // Tamanho do lote para processamento
+  // Configurações de Redis/Bull
+  QUEUE: {
+    // Reduzir verificações de jobs travados
+    STALLED_INTERVAL: 120000, // 2 minutos (era 1 minuto)
+
+    // Reduzir limpeza de filas
+    CLEANUP_INTERVAL: 6 * 60 * 60 * 1000, // 6 horas (era 4 horas)
+
+    // Reduzir jobs mantidos em memória
+    MAX_COMPLETED_JOBS: 3, // Apenas 3 jobs completos
+    MAX_FAILED_JOBS: 2, // Apenas 2 jobs falhados
   },
 
   // Configurações de banco de dados
   DATABASE: {
-    CONNECTION_LIMIT: 5, // Máximo de 5 conexões simultâneas
-    IDLE_TIMEOUT: 30000, // Timeout de conexões ociosas em 30 segundos
-    CLEANUP_INTERVAL: 60 * 60 * 1000, // Limpeza de conexões a cada 1 hora
+    // Reduzir conexões ativas
+    MAX_CONNECTIONS: 2, // Máximo 2 conexões simultâneas
+
+    // Reduzir timeout de conexão
+    CONNECTION_TIMEOUT: 10000, // 10 segundos
   },
 
-  // Configurações de Redis
-  REDIS: {
-    MAX_CONNECTIONS: 3, // Máximo de 3 conexões simultâneas
-    CONNECTION_TIMEOUT: 10000, // Timeout de conexão em 10 segundos
-    CLEANUP_INTERVAL: 2 * 60 * 60 * 1000, // Limpeza a cada 2 horas
-  },
+  // Configurações de rede
+  NETWORK: {
+    // Reduzir tamanho máximo de upload
+    MAX_UPLOAD_SIZE: 1024 * 1024, // 1MB (era 5MB)
 
-  // Configurações de filas
-  QUEUE: {
-    MAX_JOBS_IN_MEMORY: 50, // Máximo de 50 jobs na memória
-    CLEANUP_INTERVAL: 60 * 60 * 1000, // Limpeza a cada 1 hora
-    REMOVE_ON_COMPLETE: 20, // Manter apenas 20 jobs completos
-    REMOVE_ON_FAIL: 10, // Manter apenas 10 jobs falhados
-  },
-
-  // Configurações de logs
-  LOGGING: {
-    LEVEL: "warn", // Apenas logs de warning e erro em produção
-    MAX_LOG_SIZE: "10m", // Tamanho máximo de log
-    ROTATION_INTERVAL: 24 * 60 * 60 * 1000, // Rotação diária
+    // Reduzir timeout de requisições
+    REQUEST_TIMEOUT: 30000, // 30 segundos
   },
 
   // Configurações de rate limiting
   RATE_LIMIT: {
-    WINDOW_MS: 15 * 60 * 1000, // Janela de 15 minutos
-    MAX_REQUESTS: 100, // Máximo de 100 requisições por janela
-    SKIP_SUCCESSFUL_REQUESTS: true, // Pular rate limiting para requisições bem-sucedidas
+    WINDOW_MS: 15 * 60 * 1000, // 15 minutos
+    MAX_REQUESTS: 50, // Máximo 50 requests por janela
   },
+
+  // Configurações de processamento
+  PROCESSING: {
+    // Reduzir batch size
+    BATCH_SIZE: 1, // Processar apenas 1 documento por vez
+
+    // Reduzir timeout de processamento
+    PROCESSING_TIMEOUT: 20000, // 20 segundos (era 45 segundos)
+
+    // Reduzir tentativas
+    MAX_ATTEMPTS: 1, // Apenas 1 tentativa
+  },
+};
+
+// Função para aplicar configurações de produção
+export const applyProductionOptimizations = () => {
+  if (process.env.NODE_ENV === "production") {
+    console.log("🔧 Aplicando otimizações de produção...");
+
+    // Reduzir logs em produção
+    if (process.env.LOG_LEVEL) {
+      process.env.LOG_LEVEL = PRODUCTION_CONFIG.CPU.LOG_LEVEL;
+    }
+
+    // Configurar garbage collection mais agressivo
+    if (global.gc) {
+      // Forçar GC a cada 10 minutos em produção
+      setInterval(
+        () => {
+          global.gc?.();
+        },
+        10 * 60 * 1000
+      );
+    }
+
+    console.log("✅ Otimizações de produção aplicadas");
+  }
 };

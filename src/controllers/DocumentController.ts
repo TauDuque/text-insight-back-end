@@ -66,6 +66,14 @@ export class DocumentController {
 
       // Adicionar à fila de processamento
       const { documentProcessingQueue } = require("../config/queue");
+
+      // Carregar worker dorminhoco apenas quando necessário
+      if (!(global as Record<string, unknown>).workerLoaded) {
+        require("../workers/lazyDocumentWorker");
+        (global as Record<string, unknown>).workerLoaded = true;
+        console.log("🚀 Worker dorminhoco carregado sob demanda");
+      }
+
       const job = await documentProcessingQueue.add(
         "process-document",
         {
@@ -76,13 +84,13 @@ export class DocumentController {
           userId,
         },
         {
-          attempts: 3,
+          attempts: 1, // Reduzido para 1 tentativa
           backoff: {
-            type: "exponential",
-            delay: 2000,
+            type: "fixed",
+            delay: 5000,
           },
-          removeOnComplete: true,
-          removeOnFail: false,
+          removeOnComplete: 5, // Reduzido
+          removeOnFail: 3, // Reduzido
         }
       );
 

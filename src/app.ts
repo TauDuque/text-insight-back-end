@@ -11,13 +11,18 @@ import { Logger } from "./utils/logger";
 import authRoutes from "./routes/auth";
 import documentRoutes from "./routes/documents";
 
-// Importar workers e jobs
-import "./workers/documentProcessingWorker";
+// Importar workers e jobs APENAS quando necessário
+// import "./workers/documentProcessingWorker"; // REMOVIDO - será carregado sob demanda
 import { startCleanupJob } from "./jobs/cleanup";
+import { applyProductionOptimizations } from "./config/production";
+import { resourceMonitor } from "./utils/resourceMonitor";
 
 if (process.env.NODE_ENV !== "production") {
   dotenv.config();
 }
+
+// Aplicar otimizações de produção
+applyProductionOptimizations();
 
 export const app = express();
 
@@ -39,35 +44,38 @@ app.use(
   })
 );
 
-// Morgan otimizado para logs HTTP
-app.use(
-  morgan("combined", {
-    stream: {
-      write: (message: string) => {
-        Logger.info(`🌐 HTTP: ${message.trim()}`);
+// Morgan OTIMIZADO - apenas em desenvolvimento
+if (process.env.NODE_ENV === "development") {
+  app.use(
+    morgan("combined", {
+      stream: {
+        write: (message: string) => {
+          Logger.info(`🌐 HTTP: ${message.trim()}`);
+        },
       },
-    },
-    skip: (req, _res) => {
-      // Pular logs para rotas de health check e favicon
-      return req.url === "/health" || req.url === "/favicon.ico";
-    },
-  })
-);
+      skip: (req, _res) => {
+        return req.url === "/health" || req.url === "/favicon.ico";
+      },
+    })
+  );
+}
 
-// Middleware personalizado para logs detalhados (otimizado)
-app.use(requestLogger);
+// Middleware personalizado para logs detalhados (apenas em desenvolvimento)
+if (process.env.NODE_ENV === "development") {
+  app.use(requestLogger);
+}
 
 // Parsers otimizados
 app.use(
   express.json({
-    limit: "5mb", // Reduzir limite de 10mb para 5mb
-    strict: true, // Habilitar modo estrito
+    limit: "2mb", // Reduzido de 5mb para 2mb
+    strict: true,
   })
 );
 app.use(
   express.urlencoded({
     extended: true,
-    limit: "1mb", // Limitar dados de formulário
+    limit: "512kb", // Reduzido de 1mb para 512kb
   })
 );
 
@@ -75,14 +83,13 @@ app.use(
 app.use("/api/auth", authRoutes);
 app.use("/api/documents", documentRoutes);
 
-// Health check otimizado
+// Health check OTIMIZADO
 app.get("/health", (req, res) => {
   res.json({
     status: "OK",
     timestamp: new Date().toISOString(),
     version: "1.0.0",
-    memory: process.memoryUsage(),
-    uptime: process.uptime(),
+    // Removido memory e uptime para reduzir processamento
   });
 });
 
@@ -99,35 +106,41 @@ app.use("*", (req, res) => {
 
 const PORT = process.env.PORT || 3001;
 
-// Função para limpeza de memória
-const cleanupMemory = () => {
+// SINGLE setInterval para todas as limpezas (otimização crítica)
+let cleanupInterval: NodeJS.Timeout | null = null;
+
+const performCleanup = async () => {
   try {
     // Forçar garbage collection se disponível
     if (global.gc) {
       global.gc();
-      Logger.info("🧹 Garbage collection executado");
     }
 
-    // Log de uso de memória
-    const memUsage = process.memoryUsage();
-    Logger.info(
-      `💾 Uso de memória: ${Math.round(memUsage.heapUsed / 1024 / 1024)}MB`
-    );
-  } catch (error) {
-    Logger.warn("⚠️ Erro na limpeza de memória:", error);
+    // Log de uso de memória apenas a cada 4 horas
+    const now = new Date();
+    if (now.getHours() % 4 === 0 && now.getMinutes() < 5) {
+      const memUsage = process.memoryUsage();
+      Logger.info(
+        `💾 Uso de memória: ${Math.round(memUsage.heapUsed / 1024 / 1024)}MB`
+      );
+    }
+  } catch {
+    // Silenciar erros de limpeza para reduzir logs
   }
 };
 
-// Função para limpeza de conexões
+// Função para limpeza de conexões (apenas quando necessário)
 const cleanupConnections = async () => {
   try {
-    // Limpar conexões do Prisma
-    if ((global as any).prisma) {
-      await (global as any).prisma.$disconnect();
-      Logger.info("🗄️ Conexões do banco limpas");
+    if ((global as Record<string, unknown>).prisma) {
+      await (
+        (global as Record<string, unknown>).prisma as {
+          $disconnect: () => Promise<void>;
+        }
+      ).$disconnect();
     }
-  } catch (error) {
-    Logger.warn("⚠️ Erro ao limpar conexões:", error);
+  } catch {
+    // Silenciar erros
   }
 };
 
@@ -149,35 +162,48 @@ async function startServer() {
       // Iniciar job de limpeza
       startCleanupJob();
 
+      // Iniciar monitor de recursos
+      resourceMonitor.startMonitoring();
+
       // Iniciar servidor
       app.listen(PORT, () => {
         Logger.success(`🚀 Servidor rodando na porta ${PORT}`);
         Logger.info(`📖 Health check: http://localhost:${PORT}/health`);
-        Logger.info(`📄 Documentos: http://localhost:${PORT}/api/documents`);
       });
+
+      // SINGLE setInterval para limpeza (a cada 2 horas)
+      cleanupInterval = setInterval(performCleanup, 2 * 60 * 60 * 1000);
     } catch (error) {
       Logger.error("❌ Erro ao iniciar serviços:", error);
       process.exit(1);
     }
-
-    // Configurar limpeza automática
-    setInterval(cleanupMemory, 15 * 60 * 1000); // A cada 15 minutos
-    setInterval(cleanupConnections, 60 * 60 * 1000); // A cada 1 hora
   } catch (error) {
     Logger.error("❌ Erro crítico ao iniciar servidor:", error);
     process.exit(1);
   }
 }
 
-// Graceful shutdown
+// Graceful shutdown OTIMIZADO
 process.on("SIGTERM", async () => {
   Logger.info("🛑 Recebido SIGTERM, encerrando servidor...");
+
+  // Limpar interval
+  if (cleanupInterval) {
+    clearInterval(cleanupInterval);
+  }
+
   await cleanupConnections();
   process.exit(0);
 });
 
 process.on("SIGINT", async () => {
   Logger.info("🛑 Recebido SIGINT, encerrando servidor...");
+
+  // Limpar interval
+  if (cleanupInterval) {
+    clearInterval(cleanupInterval);
+  }
+
   await cleanupConnections();
   process.exit(0);
 });
